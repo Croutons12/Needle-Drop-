@@ -483,13 +483,17 @@ function renderActiveFilters() {
 }
 
 function render() {
-  const isSpotifySearch = spotifyCatalogMode && !showSavedOnly && selectedMoods.size === 0;
+  let isSpotifySearch = spotifyCatalogMode && !showSavedOnly && selectedMoods.size === 0 && spotifyAlbums.length > 0;
   const source = isSpotifySearch
     ? spotifyAlbums
     : showSavedOnly
       ? [...albums, ...savedAlbumDetails.values()].filter((album, index, all) => all.findIndex((item) => item.id === album.id) === index)
       : albums;
   currentResults = getFilteredAlbums(source);
+  if (isSpotifySearch && currentResults.length === 0) {
+    isSpotifySearch = false;
+    currentResults = getFilteredAlbums(albums);
+  }
   if (!currentResults.some((album) => album.id === pickedAlbum?.id)) {
     pickedAlbum = currentResults.length ? currentResults[Math.floor(Math.random() * currentResults.length)] : null;
   }
@@ -506,8 +510,10 @@ function render() {
   renderGenreChoices();
   if (spotifyCatalogMode && selectedMoods.size > 0 && !showSavedOnly) {
     elements.catalogStatus.textContent = "Mood tags are editorial, not part of Spotify’s catalog. Showing curated picks for your selected mood.";
-  } else if (spotifyCatalogMode && !showSavedOnly) {
+  } else if (spotifyCatalogMode && !showSavedOnly && isSpotifySearch) {
     elements.catalogStatus.textContent = "Browsing Spotify’s catalog. Mood and similar-artist discovery use Spinlist’s curated picks.";
+  } else if (spotifyCatalogMode && !showSavedOnly) {
+    elements.catalogStatus.textContent = "No matching Spotify albums. Showing matching picks from Spinlist’s curated crate.";
   } else {
     elements.catalogStatus.textContent = "";
   }
@@ -776,8 +782,13 @@ function getSpotifyArtistSearch(artist) {
   return [`artist:"${artist.replace(/["\\]/g, "")}"`, getYearQuery(), search].filter(Boolean).join(" ");
 }
 
+function getSpotifyMarket() {
+  const country = (navigator.language || "").match(/-([a-z]{2})$/i)?.[1];
+  return country ? country.toUpperCase() : "US";
+}
+
 async function searchSpotifyAlbums(query) {
-  const params = new URLSearchParams({ q: query, type: "album", limit: "10" });
+  const params = new URLSearchParams({ q: query, type: "album", limit: "10", market: getSpotifyMarket() });
   const data = await spotifyRequest(`https://api.spotify.com/v1/search?${params}`);
   return (data.albums?.items || [])
     .filter((album) => album && album.id && album.name && album.artists?.length)
@@ -790,7 +801,7 @@ async function searchSpotifyAlbums(query) {
         title: album.name,
         artist: artistName,
         year: Number.parseInt(album.release_date, 10) || 0,
-        genre: "Spotify catalog",
+        genre: getSelectedGenre() || "Spotify catalog",
         moods: [],
         related: seed ? seed.related : [],
         description: `${album.name} by ${artistName}, from Spotify’s catalog.`,
@@ -814,9 +825,14 @@ async function loadSpotifyCatalog(requestId) {
         q: `genre:"${cleanGenre}"${artistFilter}`,
         type: "artist",
         limit: "10",
+        market: getSpotifyMarket(),
       });
       const artistData = await spotifyRequest(`https://api.spotify.com/v1/search?${genreQuery}`);
-      const matchingArtists = [...new Set((artistData.artists?.items || []).map((artist) => artist.name).filter(Boolean))]
+      const spotifyArtists = (artistData.artists?.items || []).map((artist) => artist.name).filter(Boolean);
+      const curatedArtists = albums
+        .filter((album) => album.genre.toLowerCase() === genre.toLowerCase())
+        .flatMap((album) => [album.artist, ...album.related]);
+      const matchingArtists = [...new Set([...spotifyArtists, ...curatedArtists])]
         .filter((artist) => elements.artist.value === "all" || artist.toLowerCase() === elements.artist.value.toLowerCase())
         .slice(0, 5);
       const artistAlbums = await Promise.all(matchingArtists.map((artist) => searchSpotifyAlbums(getSpotifyArtistSearch(artist))));
@@ -833,8 +849,8 @@ async function loadSpotifyCatalog(requestId) {
     render();
     if (spotifyAlbums.length === 0) {
       elements.catalogStatus.textContent = getSelectedGenre()
-        ? "Spotify didn’t return matching artists for that genre. Try a broader genre or switch back to the curated crate."
-        : "Spotify didn’t find matching albums. Try a broader search or release-year range.";
+        ? "Spotify didn’t find albums for that genre. Showing matching picks from Spinlist’s curated crate instead."
+        : "Spotify didn’t find matching albums. Showing matching picks from Spinlist’s curated crate instead.";
     }
   } catch (error) {
     if (requestId !== spotifySearchRequest) return;
