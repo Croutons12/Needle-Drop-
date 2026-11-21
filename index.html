@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Find your next favorite album. Explore records by genre, year, mood, and the artists you already love."
+    />
+    <meta name="theme-color" content="#11130f" />
+    <title>Needle Drop — find your next favorite album</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="wordmark" href="#" aria-label="Needle Drop home">
+          <span class="wordmark-icon" aria-hidden="true">n.</span>
+          <span>needle<span class="wordmark-light">drop</span></span>
+        </a>
+        <span class="topbar-note"><span class="status-dot"></span> YOUR NEXT LISTENING OBSESSION</span>
+        <div class="topbar-actions">
+          <button class="spotify-connect" id="spotify-open" type="button">
+            <svg class="spotify-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" /><path d="M5.1 9.2c4.3-1.3 9.8-.9 13.2 1.2M6.3 12.1c3.5-1 7.8-.6 10.6 1M7.2 15c2.7-.8 5.8-.4 8.3.8" /></svg>
+            <span id="spotify-button-label">Connect Spotify</span>
+          </button>
+          <button class="saved-toggle" id="saved-toggle" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
+            <span>Saved</span><span class="saved-count" id="saved-count">0</span>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="eyebrow-line"></span> FOR THE ALBUM PEOPLE</p>
+            <h1 id="hero-title">A good record<br />finds <em>its way</em><br />to you.</h1>
+            <p class="hero-description">
+              Skip the endless scrolling. Tell us what you’re in the mood for
+              and find an album worth hearing all the way through.
+            </p>
+            <a class="explore-link" href="#discover">FIND YOUR NEXT ALBUM <span aria-hidden="true">↓</span></a>
+          </div>
+          <div class="hero-art" aria-label="An illustrated record sleeve">
+            <div class="hero-sticker">HANDPICKED<br />FOR YOUR<br />NEXT LISTEN</div>
+            <div class="hero-sleeve">
+              <span class="sleeve-kicker">NEEDLE DROP PRESENTS</span>
+              <div class="sleeve-sun"></div>
+              <span class="sleeve-title">the<br /><i>long</i><br />way home</span>
+              <span class="sleeve-artist">A MIX FOR TAKING YOUR TIME</span>
+              <span class="sleeve-catalog">ND—001 · 33⅓ RPM</span>
+            </div>
+            <div class="hero-vinyl" aria-hidden="true"><span></span></div>
+            <div class="hero-caption">YOUR CUE TO DIG A LITTLE DEEPER <span>✳</span></div>
+          </div>
+          <div class="hero-index" aria-hidden="true">001—025&nbsp; / &nbsp;THE CRATE</div>
+        </section>
+
+        <section class="discovery" id="discover" aria-labelledby="discover-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow"><span class="eyebrow-line"></span> THE GOOD STUFF STARTS HERE</p>
+              <h2 id="discover-title">What sounds like <em>you?</em></h2>
+            </div>
+            <p class="section-aside">A few little clues go a long way.<br />Pick as many as you like.</p>
+          </div>
+
+          <div class="filter-panel">
+            <div class="filter-grid">
+              <label class="filter-field" for="genre-filter">
+                <span class="field-label"><span>01</span> THE SOUND</span>
+                <select id="genre-filter">
+                  <option value="all">Any genre</option>
+                </select>
+                <input id="custom-genre" class="custom-genre-input" type="search" placeholder="Type a genre…" autocomplete="off" hidden />
+              </label>
+              <label class="filter-field" for="artist-filter">
+                <span class="field-label"><span>02</span> YOUR KIND OF ARTIST</span>
+                <select id="artist-filter">
+                  <option value="all">Surprise me</option>
+                </select>
+              </label>
+              <div class="filter-field year-field">
+                <span class="field-label"><span>03</span> THE ERA</span>
+                <div class="year-inputs">
+                  <label class="visually-hidden" for="year-from">Released from</label>
+                  <input id="year-from" type="number" min="1950" max="2026" placeholder="1950" inputmode="numeric" />
+                  <span class="year-dash" aria-hidden="true">—</span>
+                  <label class="visually-hidden" for="year-to">Released to</label>
+                  <input id="year-to" type="number" min="1950" max="2026" placeholder="2026" inputmode="numeric" />
+                </div>
+              </div>
+              <label class="filter-field search-field" for="search-input">
+                <span class="field-label"><span>04</span> A LITTLE MORE SPECIFIC</span>
+                <span class="search-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
+                  <input id="search-input" type="search" placeholder="Album, artist, anything…" autocomplete="off" />
+                </span>
+              </label>
+            </div>
+
+            <div class="mood-row">
+              <span class="field-label mood-label"><span>05</span> PICK A FEELING</span>
+              <div class="mood-chips" id="mood-chips" aria-label="Filter by mood"></div>
+            </div>
+            <div class="filter-footer">
+              <span class="filter-hint"><span class="hint-star">✳</span> Go with your gut. There are no wrong answers.</span>
+              <button class="clear-filters" id="clear-filters" type="button">CLEAR ALL <span aria-hidden="true">↗</span></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="results" aria-labelledby="results-title">
+          <div class="results-heading">
+            <div>
+              <p class="eyebrow"><span class="eyebrow-line"></span> OUT OF THE CRATE</p>
+              <h2 id="results-title">On your <em>wavelength.</em></h2>
+            </div>
+            <div class="results-tools">
+              <span class="results-count" id="results-count" aria-live="polite"></span>
+              <label class="sort-label" for="sort-filter">SORT BY</label>
+              <select id="sort-filter" aria-label="Sort albums">
+                <option value="match">Best match</option>
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="title">A to Z</option>
+              </select>
+            </div>
+          </div>
+          <div class="active-filters" id="active-filters"></div>
+          <p class="catalog-status" id="catalog-status" role="status" aria-live="polite"></p>
+          <div class="album-grid" id="album-grid" aria-live="polite"></div>
+          <div class="empty-state" id="empty-state" hidden>
+            <span class="empty-icon">◌</span>
+            <h3>No records in this stack. Yet.</h3>
+            <p>Try a different mood or loosen up those filters. The good stuff is in there.</p>
+            <button class="button-primary" id="empty-clear" type="button">RESET THE CRATE <span aria-hidden="true">↗</span></button>
+          </div>
+          <div class="crate-footer">
+            <span>GOOD ALBUMS DON’T NEED TO BE NEW.</span>
+            <button id="surprise-button" type="button">DEAL ME A WILD CARD <span aria-hidden="true">⤴</span></button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <a class="wordmark footer-wordmark" href="#" aria-label="Needle Drop home">
+          <span class="wordmark-icon" aria-hidden="true">n.</span>
+          <span>needle<span class="wordmark-light">drop</span></span>
+        </a>
+        <span>MADE FOR THE LOVE OF A FULL ALBUM.</span>
+        <span><a href="privacy.html">PRIVACY</a>&nbsp;&nbsp; · &nbsp;&nbsp;PUT THE NEEDLE DOWN. <span class="footer-star">✳</span></span>
+      </footer>
+    </div>
+
+    <dialog class="album-dialog" id="album-dialog" aria-labelledby="dialog-title">
+      <button class="dialog-close" id="dialog-close" type="button" aria-label="Close album details">×</button>
+      <div id="dialog-content"></div>
+    </dialog>
+
+    <dialog class="spotify-dialog" id="spotify-dialog" aria-labelledby="spotify-dialog-title">
+      <button class="dialog-close" id="spotify-dialog-close" type="button" aria-label="Close Spotify settings">×</button>
+      <div class="spotify-dialog-content">
+        <p class="eyebrow"><span class="eyebrow-line"></span> BRING THE WHOLE CATALOG</p>
+        <h2 id="spotify-dialog-title">Make room for <em>more.</em></h2>
+        <p class="spotify-intro">Connect your own Spotify developer app to search real albums, artists, release dates, and artwork. Your Spotify client ID is public; no client secret is needed or accepted.</p>
+        <label class="spotify-client-label" for="spotify-client-id">SPOTIFY CLIENT ID</label>
+        <input id="spotify-client-id" class="spotify-client-input" type="text" inputmode="text" autocomplete="off" placeholder="Paste your Spotify Client ID" />
+        <div class="redirect-box">
+          <span class="spotify-client-label">ADD THIS EXACT REDIRECT URI IN YOUR SPOTIFY APP SETTINGS</span>
+          <code id="spotify-redirect-uri"></code>
+        </div>
+        <ol class="spotify-steps">
+          <li>Create a Web API app in the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Spotify Developer Dashboard ↗</a>.</li>
+          <li>Add the redirect URI above in the app settings, then copy its Client ID here.</li>
+          <li>Host this site on HTTPS (for example, GitHub Pages) before connecting.</li>
+        </ol>
+        <p class="spotify-policy-note">Spotify catalog data doesn’t include reliable mood labels or a similar-artist recommendations API. Those discovery filters continue to use Needle Drop’s curated picks.</p>
+        <p class="spotify-error" id="spotify-error" role="alert" hidden></p>
+        <div class="spotify-dialog-actions">
+          <button class="button-secondary" id="spotify-disconnect" type="button" hidden>DISCONNECT</button>
+          <button class="button-primary spotify-primary" id="spotify-connect" type="button">SAVE &amp; CONNECT ↗</button>
+        </div>
+      </div>
+    </dialog>
+  </body>
+</html>
