@@ -7,12 +7,12 @@
       name="description"
       content="Find your next favorite album. Explore records by genre, year, mood, and the artists you already love."
     />
-    <meta name="theme-color" content="#11130f" />
+    <meta name="theme-color" content="#191411" />
     <title>Needle Drop — find your next favorite album</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -42,26 +42,47 @@
         <section class="hero" aria-labelledby="hero-title">
           <div class="hero-copy">
             <p class="eyebrow"><span class="eyebrow-line"></span> FOR THE ALBUM PEOPLE</p>
-            <h1 id="hero-title">A good record<br />finds <em>its way</em><br />to you.</h1>
+            <h1 id="hero-title">A good record finds<br class="hero-wide-break" /><em>its way</em> to you.</h1>
             <p class="hero-description">
-              Skip the endless scrolling. Tell us what you’re in the mood for
-              and find an album worth hearing all the way through.
+              Start with a handpicked album, then fine-tune your next listen by
+              mood, genre, era, or artist.
             </p>
-            <a class="explore-link" href="#discover">FIND YOUR NEXT ALBUM <span aria-hidden="true">↓</span></a>
-          </div>
-          <div class="hero-art" aria-label="An illustrated record sleeve">
-            <div class="hero-sticker">HANDPICKED<br />FOR YOUR<br />NEXT LISTEN</div>
-            <div class="hero-sleeve">
-              <span class="sleeve-kicker">NEEDLE DROP PRESENTS</span>
-              <div class="sleeve-sun"></div>
-              <span class="sleeve-title">the<br /><i>long</i><br />way home</span>
-              <span class="sleeve-artist">A MIX FOR TAKING YOUR TIME</span>
-              <span class="sleeve-catalog">ND—001 · 33⅓ RPM</span>
-            </div>
-            <div class="hero-vinyl" aria-hidden="true"><span></span></div>
-            <div class="hero-caption">YOUR CUE TO DIG A LITTLE DEEPER <span>✳</span></div>
+            <a class="explore-link" href="#recommendations">FIND YOUR NEXT ALBUM <span aria-hidden="true">↓</span></a>
           </div>
           <div class="hero-index" aria-hidden="true">001—025&nbsp; / &nbsp;THE CRATE</div>
+        </section>
+
+        <section class="results" id="recommendations" aria-labelledby="results-title">
+          <div class="results-heading">
+            <div>
+              <p class="eyebrow"><span class="eyebrow-line"></span> ALBUMS PICKED FOR YOU</p>
+              <h2 id="results-title">On your <em>wavelength.</em></h2>
+            </div>
+            <div class="results-tools">
+              <a class="refine-link" href="#discover">TUNE THESE PICKS <span aria-hidden="true">↓</span></a>
+              <span class="results-count" id="results-count" aria-live="polite"></span>
+              <label class="sort-label" for="sort-filter">SORT BY</label>
+              <select id="sort-filter" aria-label="Sort albums">
+                <option value="match">Best match</option>
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="title">A to Z</option>
+              </select>
+            </div>
+          </div>
+          <div class="active-filters" id="active-filters"></div>
+          <p class="catalog-status" id="catalog-status" role="status" aria-live="polite"></p>
+          <div class="album-grid" id="album-grid" aria-live="polite"></div>
+          <div class="empty-state" id="empty-state" hidden>
+            <span class="empty-icon">◌</span>
+            <h3>No records in this stack. Yet.</h3>
+            <p>Try a different mood or loosen up those filters. The good stuff is in there.</p>
+            <button class="button-primary" id="empty-clear" type="button">RESET THE CRATE <span aria-hidden="true">↗</span></button>
+          </div>
+          <div class="crate-footer">
+            <span>GOOD ALBUMS DON’T NEED TO BE NEW.</span>
+            <button id="surprise-button" type="button">DEAL ME A WILD CARD <span aria-hidden="true">⤴</span></button>
+          </div>
         </section>
 
         <section class="discovery" id="discover" aria-labelledby="discover-title">
@@ -113,42 +134,12 @@
             </div>
             <div class="filter-footer">
               <span class="filter-hint"><span class="hint-star">✳</span> Go with your gut. There are no wrong answers.</span>
+              <a class="back-to-picks" href="#recommendations">SEE THE ALBUMS <span aria-hidden="true">↑</span></a>
               <button class="clear-filters" id="clear-filters" type="button">CLEAR ALL <span aria-hidden="true">↗</span></button>
             </div>
           </div>
         </section>
 
-        <section class="results" aria-labelledby="results-title">
-          <div class="results-heading">
-            <div>
-              <p class="eyebrow"><span class="eyebrow-line"></span> OUT OF THE CRATE</p>
-              <h2 id="results-title">On your <em>wavelength.</em></h2>
-            </div>
-            <div class="results-tools">
-              <span class="results-count" id="results-count" aria-live="polite"></span>
-              <label class="sort-label" for="sort-filter">SORT BY</label>
-              <select id="sort-filter" aria-label="Sort albums">
-                <option value="match">Best match</option>
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="title">A to Z</option>
-              </select>
-            </div>
-          </div>
-          <div class="active-filters" id="active-filters"></div>
-          <p class="catalog-status" id="catalog-status" role="status" aria-live="polite"></p>
-          <div class="album-grid" id="album-grid" aria-live="polite"></div>
-          <div class="empty-state" id="empty-state" hidden>
-            <span class="empty-icon">◌</span>
-            <h3>No records in this stack. Yet.</h3>
-            <p>Try a different mood or loosen up those filters. The good stuff is in there.</p>
-            <button class="button-primary" id="empty-clear" type="button">RESET THE CRATE <span aria-hidden="true">↗</span></button>
-          </div>
-          <div class="crate-footer">
-            <span>GOOD ALBUMS DON’T NEED TO BE NEW.</span>
-            <button id="surprise-button" type="button">DEAL ME A WILD CARD <span aria-hidden="true">⤴</span></button>
-          </div>
-        </section>
       </main>
 
       <footer class="site-footer">
