@@ -1,8 +1,8 @@
-# Needle Drop
+# Spinlist
 
-A no-build album-discovery site. Browse a curated crate of records by genre,
-release year, mood, and artists you already love. Search, sort, save favorites,
-and deal yourself a random wild card. Saved albums stay in your browser.
+A no-build album-discovery site. Browse a curated crate by genre, release year,
+mood, and similar artists. Pick one random album at a time, and save favorites
+in your browser.
 
 Connect your own Spotify developer app to search Spotify's catalog for albums,
 artists, release dates, and artwork. Spotify search uses OAuth Authorization
@@ -32,7 +32,7 @@ The site is static and can be served directly from the repository root.
 2. Deploy the site over HTTPS (GitHub Pages works) and copy its exact URL from
    **Connect Spotify** in the site.
 3. Add that exact URL as a redirect URI in the Spotify app settings.
-4. Enter the app's **Client ID** in Needle Drop and connect. Never enter a
+4. Enter the app's **Client ID** in Spinlist and connect. Never enter a
    Spotify client secret; this static site does not need one.
 
 Spotify's Development Mode and API quota rules apply to the app you create.

@@ -8,7 +8,7 @@
       content="Find your next favorite album. Explore records by genre, year, mood, and the artists you already love."
     />
     <meta name="theme-color" content="#191411" />
-    <title>Needle Drop — find your next favorite album</title>
+    <title>Spinlist — find your next favorite album</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -21,11 +21,11 @@
   <body>
     <div class="page-shell">
       <header class="topbar">
-        <a class="wordmark" href="#" aria-label="Needle Drop home">
-          <span class="wordmark-icon" aria-hidden="true">n.</span>
-          <span>needle<span class="wordmark-light">drop</span></span>
+        <a class="wordmark" href="#" aria-label="Spinlist home">
+          <span class="wordmark-icon" aria-hidden="true">s.</span>
+          <span>spin<span class="wordmark-light">list</span></span>
         </a>
-        <span class="topbar-note"><span class="status-dot"></span> YOUR NEXT LISTENING OBSESSION</span>
+        <span class="topbar-note"><span class="status-dot"></span> THE CRATE IS OPEN</span>
         <div class="topbar-actions">
           <button class="spotify-connect" id="spotify-open" type="button">
             <svg class="spotify-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" /><path d="M5.1 9.2c4.3-1.3 9.8-.9 13.2 1.2M6.3 12.1c3.5-1 7.8-.6 10.6 1M7.2 15c2.7-.8 5.8-.4 8.3.8" /></svg>
@@ -39,116 +39,111 @@
       </header>
 
       <main>
-        <section class="hero" aria-labelledby="hero-title">
-          <div class="hero-copy">
-            <p class="eyebrow"><span class="eyebrow-line"></span> FOR THE ALBUM PEOPLE</p>
-            <h1 id="hero-title">A good record finds<br class="hero-wide-break" /><em>its way</em> to you.</h1>
-            <p class="hero-description">
-              Start with a handpicked album, then fine-tune your next listen by
-              mood, genre, era, or artist.
-            </p>
-            <a class="explore-link" href="#recommendations">FIND YOUR NEXT ALBUM <span aria-hidden="true">↓</span></a>
+        <section class="welcome" aria-labelledby="welcome-title">
+          <div class="welcome-copy">
+            <p class="eyebrow"><span class="eyebrow-line"></span> A RANDOM ALBUM PICKER</p>
+            <h1 id="welcome-title">Pick a genre.<br class="welcome-break" /><em>Meet an album.</em></h1>
+            <p>Choose a sound and let the crate make the call. One album at a time, no endless scroll.</p>
           </div>
-          <div class="hero-index" aria-hidden="true">001—025&nbsp; / &nbsp;THE CRATE</div>
+          <span class="welcome-stamp" aria-hidden="true">YOUR NEXT<br />LISTEN STARTS<br />RIGHT HERE</span>
         </section>
 
-        <section class="results" id="recommendations" aria-labelledby="results-title">
-          <div class="results-heading">
-            <div>
-              <p class="eyebrow"><span class="eyebrow-line"></span> ALBUMS PICKED FOR YOU</p>
-              <h2 id="results-title">On your <em>wavelength.</em></h2>
-            </div>
-            <div class="results-tools">
-              <a class="refine-link" href="#discover">TUNE THESE PICKS <span aria-hidden="true">↓</span></a>
-              <span class="results-count" id="results-count" aria-live="polite"></span>
-              <label class="sort-label" for="sort-filter">SORT BY</label>
-              <select id="sort-filter" aria-label="Sort albums">
-                <option value="match">Best match</option>
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="title">A to Z</option>
+        <div class="picker-layout">
+          <aside class="picker-controls" aria-label="Album picker controls">
+            <section class="genre-panel" aria-labelledby="genre-title">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">01 / THE CRATE</p>
+                  <h2 id="genre-title">Choose a genre</h2>
+                </div>
+                <span class="genre-count" id="genre-count"></span>
+              </div>
+              <div class="genre-choices" id="genre-choices" role="group" aria-label="Choose one genre"></div>
+              <label class="visually-hidden" for="genre-filter">Selected genre</label>
+              <select id="genre-filter" class="visually-hidden" aria-label="Selected genre">
+                <option value="all">Any genre</option>
               </select>
-            </div>
-          </div>
-          <div class="active-filters" id="active-filters"></div>
-          <p class="catalog-status" id="catalog-status" role="status" aria-live="polite"></p>
-          <div class="album-grid" id="album-grid" aria-live="polite"></div>
-          <div class="empty-state" id="empty-state" hidden>
-            <span class="empty-icon">◌</span>
-            <h3>No records in this stack. Yet.</h3>
-            <p>Try a different mood or loosen up those filters. The good stuff is in there.</p>
-            <button class="button-primary" id="empty-clear" type="button">RESET THE CRATE <span aria-hidden="true">↗</span></button>
-          </div>
-          <div class="crate-footer">
-            <span>GOOD ALBUMS DON’T NEED TO BE NEW.</span>
-            <button id="surprise-button" type="button">DEAL ME A WILD CARD <span aria-hidden="true">⤴</span></button>
-          </div>
-        </section>
+              <input id="custom-genre" class="custom-genre-input" type="search" placeholder="Type a genre…" autocomplete="off" hidden />
+              <p class="genre-note">Every genre represented in the crate, in one place.</p>
+            </section>
 
-        <section class="discovery" id="discover" aria-labelledby="discover-title">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow"><span class="eyebrow-line"></span> THE GOOD STUFF STARTS HERE</p>
-              <h2 id="discover-title">What sounds like <em>you?</em></h2>
-            </div>
-            <p class="section-aside">A few little clues go a long way.<br />Pick as many as you like.</p>
-          </div>
-
-          <div class="filter-panel">
-            <div class="filter-grid">
-              <label class="filter-field" for="genre-filter">
-                <span class="field-label"><span>01</span> THE SOUND</span>
-                <select id="genre-filter">
-                  <option value="all">Any genre</option>
-                </select>
-                <input id="custom-genre" class="custom-genre-input" type="search" placeholder="Type a genre…" autocomplete="off" hidden />
-              </label>
-              <label class="filter-field" for="artist-filter">
-                <span class="field-label"><span>02</span> YOUR KIND OF ARTIST</span>
-                <select id="artist-filter">
-                  <option value="all">Surprise me</option>
-                </select>
-              </label>
-              <div class="filter-field year-field">
-                <span class="field-label"><span>03</span> THE ERA</span>
-                <div class="year-inputs">
-                  <label class="visually-hidden" for="year-from">Released from</label>
-                  <input id="year-from" type="number" min="1950" max="2026" placeholder="1950" inputmode="numeric" />
-                  <span class="year-dash" aria-hidden="true">—</span>
-                  <label class="visually-hidden" for="year-to">Released to</label>
-                  <input id="year-to" type="number" min="1950" max="2026" placeholder="2026" inputmode="numeric" />
+            <details class="refinements" id="refinements">
+              <summary>
+                <span><span class="refine-number">02</span> Fine-tune the pick</span>
+                <span class="refine-summary-note">artist · era · mood</span>
+              </summary>
+              <div class="refinements-body">
+                <div class="refinement-grid">
+                  <label class="filter-field" for="artist-filter">
+                    <span class="field-label">SIMILAR ARTIST</span>
+                    <select id="artist-filter">
+                      <option value="all">Surprise me</option>
+                    </select>
+                  </label>
+                  <div class="filter-field year-field">
+                    <span class="field-label">RELEASED BETWEEN</span>
+                    <div class="year-inputs">
+                      <label class="visually-hidden" for="year-from">Released from</label>
+                      <input id="year-from" type="number" min="1950" max="2026" placeholder="1950" inputmode="numeric" />
+                      <span class="year-dash" aria-hidden="true">—</span>
+                      <label class="visually-hidden" for="year-to">Released to</label>
+                      <input id="year-to" type="number" min="1950" max="2026" placeholder="2026" inputmode="numeric" />
+                    </div>
+                  </div>
+                  <label class="filter-field search-field" for="search-input">
+                    <span class="field-label">SEARCH THE CRATE</span>
+                    <span class="search-wrap">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
+                      <input id="search-input" type="search" placeholder="Album or artist…" autocomplete="off" />
+                    </span>
+                  </label>
+                </div>
+                <div class="mood-row">
+                  <span class="field-label mood-label">MOOD</span>
+                  <div class="mood-chips" id="mood-chips" role="group" aria-label="Filter by mood"></div>
+                </div>
+                <div class="refinements-footer">
+                  <span class="filter-hint">More clues, narrower crate.</span>
+                  <button class="clear-filters" id="clear-filters" type="button">RESET FILTERS <span aria-hidden="true">↺</span></button>
                 </div>
               </div>
-              <label class="filter-field search-field" for="search-input">
-                <span class="field-label"><span>04</span> A LITTLE MORE SPECIFIC</span>
-                <span class="search-wrap">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
-                  <input id="search-input" type="search" placeholder="Album, artist, anything…" autocomplete="off" />
-                </span>
-              </label>
-            </div>
+            </details>
+          </aside>
 
-            <div class="mood-row">
-              <span class="field-label mood-label"><span>05</span> PICK A FEELING</span>
-              <div class="mood-chips" id="mood-chips" aria-label="Filter by mood"></div>
+          <section class="pick-stage" id="recommendations" aria-labelledby="pick-title">
+            <header class="stage-heading">
+              <div>
+                <p class="eyebrow"><span class="eyebrow-line"></span> YOUR RANDOM ALBUM</p>
+                <h2 id="pick-title">The next <em>listen.</em></h2>
+              </div>
+              <span class="results-count" id="results-count" aria-live="polite"></span>
+            </header>
+            <div class="active-filters" id="active-filters"></div>
+            <p class="catalog-status" id="catalog-status" role="status" aria-live="polite"></p>
+            <p class="pick-caption" id="pick-caption"></p>
+            <div class="album-grid" id="album-grid" aria-live="polite"></div>
+            <div class="empty-state" id="empty-state" hidden>
+              <span class="empty-icon" aria-hidden="true">↻</span>
+              <h3>Nothing in this groove yet.</h3>
+              <p>Try another genre or loosen a filter, then spin again.</p>
+              <button class="button-primary" id="empty-clear" type="button">RESET FILTERS</button>
             </div>
-            <div class="filter-footer">
-              <span class="filter-hint"><span class="hint-star">✳</span> Go with your gut. There are no wrong answers.</span>
-              <a class="back-to-picks" href="#recommendations">SEE THE ALBUMS <span aria-hidden="true">↑</span></a>
-              <button class="clear-filters" id="clear-filters" type="button">CLEAR ALL <span aria-hidden="true">↗</span></button>
-            </div>
-          </div>
-        </section>
-
+            <button class="draw-button" id="surprise-button" type="button">
+              <span class="draw-icon" aria-hidden="true">↻</span>
+              <span>Pick another album</span>
+              <span class="draw-arrow" aria-hidden="true">↗</span>
+            </button>
+          </section>
+        </div>
       </main>
 
       <footer class="site-footer">
-        <a class="wordmark footer-wordmark" href="#" aria-label="Needle Drop home">
-          <span class="wordmark-icon" aria-hidden="true">n.</span>
-          <span>needle<span class="wordmark-light">drop</span></span>
+        <a class="wordmark footer-wordmark" href="#" aria-label="Spinlist home">
+          <span class="wordmark-icon" aria-hidden="true">s.</span>
+          <span>spin<span class="wordmark-light">list</span></span>
         </a>
         <span>MADE FOR THE LOVE OF A FULL ALBUM.</span>
-        <span><a href="privacy.html">PRIVACY</a>&nbsp;&nbsp; · &nbsp;&nbsp;PUT THE NEEDLE DOWN. <span class="footer-star">✳</span></span>
+        <span><a href="privacy.html">PRIVACY</a>&nbsp;&nbsp; · &nbsp;&nbsp;LET THE CRATE DECIDE. <span class="footer-star">✳</span></span>
       </footer>
     </div>
 
@@ -174,7 +169,7 @@
           <li>Add the redirect URI above in the app settings, then copy its Client ID here.</li>
           <li>Host this site on HTTPS (for example, GitHub Pages) before connecting.</li>
         </ol>
-        <p class="spotify-policy-note">Spotify catalog data doesn’t include reliable mood labels or a similar-artist recommendations API. Those discovery filters continue to use Needle Drop’s curated picks.</p>
+        <p class="spotify-policy-note">Spotify catalog data doesn’t include reliable mood labels or a similar-artist recommendations API. Those discovery filters continue to use Spinlist’s curated picks.</p>
         <p class="spotify-error" id="spotify-error" role="alert" hidden></p>
         <div class="spotify-dialog-actions">
           <button class="button-secondary" id="spotify-disconnect" type="button" hidden>DISCONNECT</button>

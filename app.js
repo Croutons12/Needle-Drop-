@@ -152,15 +152,19 @@ const spotifyClientStorageKey = "needle-drop-spotify-client-id";
 const spotifyTokenStorageKey = "needle-drop-spotify-token";
 const elements = {
   genre: document.querySelector("#genre-filter"),
+  genreChoices: document.querySelector("#genre-choices"),
+  genreCount: document.querySelector("#genre-count"),
   customGenre: document.querySelector("#custom-genre"),
+  refinements: document.querySelector("#refinements"),
   artist: document.querySelector("#artist-filter"),
   yearFrom: document.querySelector("#year-from"),
   yearTo: document.querySelector("#year-to"),
   search: document.querySelector("#search-input"),
-  sort: document.querySelector("#sort-filter"),
   moods: document.querySelector("#mood-chips"),
   grid: document.querySelector("#album-grid"),
   count: document.querySelector("#results-count"),
+  pickCaption: document.querySelector("#pick-caption"),
+  surpriseButton: document.querySelector("#surprise-button"),
   activeFilters: document.querySelector("#active-filters"),
   emptyState: document.querySelector("#empty-state"),
   savedToggle: document.querySelector("#saved-toggle"),
@@ -178,11 +182,14 @@ const elements = {
 };
 
 const selectedMoods = new Set();
+const genreOptions = [...new Set(albums.map((album) => album.genre))].sort((a, b) => a.localeCompare(b));
+const genreCounts = new Map(genreOptions.map((genre) => [genre, albums.filter((album) => album.genre === genre).length]));
 let savedAlbums = readSavedAlbums();
 let savedAlbumDetails = readSavedAlbumDetails();
 savedAlbums = new Set([...savedAlbums].filter((id) => albums.some((album) => album.id === id) || savedAlbumDetails.has(id)));
 let showSavedOnly = false;
 let currentResults = [];
+let pickedAlbum = null;
 let spotifyAccessToken = "";
 let spotifyTokenExpiresAt = 0;
 let spotifyRefreshToken = "";
@@ -222,7 +229,7 @@ function populateSelect(select, options, firstLabel) {
   select.options[0].textContent = firstLabel;
 }
 
-populateSelect(elements.genre, [...new Set(albums.map((album) => album.genre))].sort(), "Any genre");
+populateSelect(elements.genre, genreOptions, "Any genre");
 const customGenreOption = document.createElement("option");
 customGenreOption.value = "custom";
 customGenreOption.textContent = "Other genre…";
@@ -258,6 +265,44 @@ for (const mood of moods) {
   elements.moods.append(button);
 }
 
+function renderGenreChoices() {
+  const choices = [
+    { value: "all", label: "Any genre", count: albums.length },
+    ...genreOptions.map((genre) => ({ value: genre, label: genre, count: genreCounts.get(genre) })),
+    { value: "custom", label: "Other genre…", count: null },
+  ];
+  elements.genreCount.textContent = `${genreOptions.length} GENRES`;
+  elements.genreChoices.replaceChildren();
+
+  for (const choice of choices) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "genre-choice";
+    button.dataset.genre = choice.value;
+    button.setAttribute("aria-pressed", String(elements.genre.value === choice.value));
+    const label = document.createElement("span");
+    label.textContent = choice.label;
+    button.append(label);
+    if (choice.count !== null) {
+      const count = document.createElement("span");
+      count.className = "genre-choice-count";
+      count.textContent = String(choice.count).padStart(2, "0");
+      button.append(count);
+    }
+    button.addEventListener("click", () => {
+      elements.genre.value = choice.value;
+      elements.customGenre.hidden = choice.value !== "custom";
+      if (choice.value !== "custom") elements.customGenre.value = "";
+      else elements.refinements.open = true;
+      pickedAlbum = null;
+      render();
+      scheduleSpotifySearch();
+      if (choice.value === "custom") elements.customGenre.focus();
+    });
+    elements.genreChoices.append(button);
+  }
+}
+
 function getFilteredAlbums(source = albums) {
   const search = elements.search.value.trim().toLowerCase();
   const genre = getSelectedGenre();
@@ -265,7 +310,7 @@ function getFilteredAlbums(source = albums) {
   const from = elements.yearFrom.value === "" ? -Infinity : Number(elements.yearFrom.value);
   const to = elements.yearTo.value === "" ? Infinity : Number(elements.yearTo.value);
 
-  const matches = source.filter((album) => {
+  return source.filter((album) => {
     const searchable = [album.title, album.artist, album.genre, ...album.related].join(" ").toLowerCase();
     const matchesSearch = !search || source === spotifyAlbums || searchable.includes(search);
     const matchesGenre = source === spotifyAlbums || !genre || album.genre === genre;
@@ -275,17 +320,6 @@ function getFilteredAlbums(source = albums) {
     const matchesSaved = !showSavedOnly || savedAlbums.has(album.id);
     return matchesSearch && matchesGenre && matchesArtist && matchesYears && matchesMoods && matchesSaved;
   });
-
-  switch (elements.sort.value) {
-    case "newest":
-      return matches.sort((a, b) => b.year - a.year || a.title.localeCompare(b.title));
-    case "oldest":
-      return matches.sort((a, b) => a.year - b.year || a.title.localeCompare(b.title));
-    case "title":
-      return matches.sort((a, b) => a.title.localeCompare(b.title));
-    default:
-      return matches;
-  }
 }
 
 function createCover(album) {
@@ -309,7 +343,7 @@ function createCover(album) {
   geometry.className = "cover-geometry";
   const topline = document.createElement("span");
   topline.className = "cover-topline";
-  topline.textContent = `NEEDLE DROP  /  ${album.year}`;
+  topline.textContent = `SPINLIST  /  ${album.year}`;
   const bigtitle = document.createElement("span");
   bigtitle.className = "cover-bigtitle";
   bigtitle.textContent = album.title;
@@ -456,16 +490,24 @@ function render() {
       ? [...albums, ...savedAlbumDetails.values()].filter((album, index, all) => all.findIndex((item) => item.id === album.id) === index)
       : albums;
   currentResults = getFilteredAlbums(source);
+  if (!currentResults.some((album) => album.id === pickedAlbum?.id)) {
+    pickedAlbum = currentResults.length ? currentResults[Math.floor(Math.random() * currentResults.length)] : null;
+  }
   const fragment = document.createDocumentFragment();
-  for (const album of currentResults) fragment.append(renderCard(album));
+  if (pickedAlbum) fragment.append(renderCard(pickedAlbum));
   elements.grid.replaceChildren(fragment);
-  elements.grid.hidden = currentResults.length === 0;
-  elements.emptyState.hidden = currentResults.length > 0;
-  elements.count.textContent = `${String(currentResults.length).padStart(2, "0")} ${showSavedOnly ? "SAVED RECORDS" : spotifyCatalogMode && isSpotifySearch ? "SPOTIFY RESULTS" : currentResults.length === 1 ? "RECORD FOUND" : "RECORDS FOUND"}`;
+  elements.grid.hidden = !pickedAlbum;
+  elements.emptyState.hidden = Boolean(pickedAlbum);
+  elements.count.textContent = `${String(currentResults.length).padStart(2, "0")} ${showSavedOnly ? "SAVED ALBUMS" : spotifyCatalogMode && isSpotifySearch ? "SPOTIFY ALBUMS" : "ALBUMS TO PICK FROM"}`;
+  elements.pickCaption.textContent = pickedAlbum
+    ? `${pickedAlbum.genre.toUpperCase()}  ·  ${pickedAlbum.year}  ·  PICKED AT RANDOM`
+    : "No albums match these filters.";
+  elements.surpriseButton.disabled = currentResults.length < 2;
+  renderGenreChoices();
   if (spotifyCatalogMode && selectedMoods.size > 0 && !showSavedOnly) {
     elements.catalogStatus.textContent = "Mood tags are editorial, not part of Spotify’s catalog. Showing curated picks for your selected mood.";
   } else if (spotifyCatalogMode && !showSavedOnly) {
-    elements.catalogStatus.textContent = "Browsing Spotify’s catalog. Mood and similar-artist discovery use Needle Drop’s curated picks.";
+    elements.catalogStatus.textContent = "Browsing Spotify’s catalog. Mood and similar-artist discovery use Spinlist’s curated picks.";
   } else {
     elements.catalogStatus.textContent = "";
   }
@@ -891,7 +933,7 @@ elements.spotifyDisconnect.addEventListener("click", () => {
   }
 });
 
-for (const control of [elements.genre, elements.artist, elements.yearFrom, elements.yearTo, elements.search, elements.sort, elements.customGenre]) {
+for (const control of [elements.genre, elements.artist, elements.yearFrom, elements.yearTo, elements.search, elements.customGenre]) {
   control.addEventListener(control === elements.search || control === elements.yearFrom || control === elements.yearTo ? "input" : "change", () => {
     if (control === elements.genre) {
       elements.customGenre.hidden = control.value !== "custom";
@@ -924,9 +966,11 @@ elements.savedToggle.addEventListener("click", () => {
   render();
   scheduleSpotifySearch();
 });
-document.querySelector("#surprise-button").addEventListener("click", () => {
-  const options = currentResults.length ? currentResults : albums;
-  openAlbum(options[Math.floor(Math.random() * options.length)]);
+elements.surpriseButton.addEventListener("click", () => {
+  const options = currentResults.filter((album) => album.id !== pickedAlbum?.id);
+  if (options.length) pickedAlbum = options[Math.floor(Math.random() * options.length)];
+  else if (currentResults.length) pickedAlbum = currentResults[0];
+  render();
 });
 document.querySelector("#dialog-close").addEventListener("click", () => elements.dialog.close());
 elements.dialog.addEventListener("click", (event) => {
