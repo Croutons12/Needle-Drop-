@@ -839,6 +839,7 @@ h2 { font: 12px/1.8 var(--pixel); letter-spacing: 0; }
 
 @media (max-width: 620px) {
   .page-shell { width: calc(100% - 28px); }
+  .pick-stage { order: -1; }
   .topbar { min-height: 64px; }
   .wordmark { font-size: 8px; }
   .spotify-connect { padding: 7px 8px; font-size: 15px; }
