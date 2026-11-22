@@ -574,7 +574,11 @@ async function musicBrainzRequest(path) {
     window.clearTimeout(timeout);
   }
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || `MusicBrainz request failed (${response.status}).`);
+  if (!response.ok) {
+    const error = new Error(data.error || `MusicBrainz request failed (${response.status}).`);
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 
@@ -626,7 +630,18 @@ async function loadMusicBrainzCatalog(genre, requestId, randomMode) {
     const params = new URLSearchParams();
     if (genre) params.set("genre", genre);
     const query = params.toString();
-    const data = await musicBrainzRequest(`${randomMode ? "/random-album" : "/albums"}${query ? `?${query}` : ""}`);
+    const path = `${randomMode ? "/random-album" : "/albums"}${query ? `?${query}` : ""}`;
+    let data;
+    try {
+      data = await musicBrainzRequest(path);
+    } catch (error) {
+      if (!randomMode || error.status !== 503) throw error;
+      musicBrainzStatusMessage = "MusicBrainz is busy; retrying your random pick…";
+      render();
+      await new Promise((resolve) => window.setTimeout(resolve, 1200));
+      if (requestId !== musicBrainzSearchRequest) return;
+      data = await musicBrainzRequest(path);
+    }
     if (requestId !== musicBrainzSearchRequest) return;
     musicBrainzSearchPending = false;
     musicBrainzAlbums = mapMusicBrainzAlbums(randomMode ? { albums: data.album ? [data.album] : [] } : data, genre);
@@ -690,7 +705,9 @@ function render() {
     && spotifyAlbums.length > 0;
   const source = isMusicBrainzSearch
     ? musicBrainzAlbums
-    : isSpotifySearch
+    : musicBrainzRandomMode
+      ? []
+      : isSpotifySearch
       ? spotifyAlbums
     : showSavedOnly
       ? [...albums, ...savedAlbumDetails.values()].filter((album, index, all) => all.findIndex((item) => item.id === album.id) === index)
@@ -717,11 +734,20 @@ function render() {
   elements.pickCaption.textContent = pickedAlbum
     ? `${pickedAlbum.genre.toUpperCase()}  ·  ${pickedAlbum.year || "YEAR UNKNOWN"}  ·  PICKED AT RANDOM`
     : "No albums match these filters.";
-  elements.surpriseButton.disabled = musicBrainzRandomMode && musicBrainzSearchPending
-    ? true
-    : musicBrainzRandomMode && isMusicBrainzSearch
-      ? false
-      : currentResults.length < 2;
+  elements.surpriseButton.disabled = musicBrainzRandomMode
+    ? musicBrainzSearchPending
+    : currentResults.length < 2;
+  const randomPickFailed = musicBrainzRandomMode
+    && !musicBrainzSearchPending
+    && !musicBrainzCatalogLoaded
+    && musicBrainzStatusMessage.startsWith("MusicBrainz search failed:");
+  elements.emptyState.querySelector("h3").textContent = randomPickFailed
+    ? "MusicBrainz is unavailable."
+    : "Nothing in this groove yet.";
+  elements.emptyState.querySelector("p").textContent = randomPickFailed
+    ? "Press “Pick another album” to retry your random pick."
+    : "Try another genre or loosen a filter, then spin again.";
+  elements.emptyState.querySelector("#empty-clear").hidden = randomPickFailed;
   renderGenreChoices();
   if (musicBrainzStatusMessage) {
     elements.catalogStatus.textContent = musicBrainzStatusMessage;
