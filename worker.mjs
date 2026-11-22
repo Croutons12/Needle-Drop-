@@ -57,10 +57,6 @@ export default {
     if (url.pathname !== "/genres" && url.pathname !== "/albums") {
       return jsonResponse({ error: "Endpoint not found." }, 404, origin);
     }
-    if (url.pathname === "/albums" && !url.searchParams.get("genre")?.trim()) {
-      return jsonResponse({ error: "A genre query is required." }, 400, origin);
-    }
-
     const id = env.MUSICBRAINZ_GATEWAY.idFromName("global");
     return env.MUSICBRAINZ_GATEWAY.get(id).fetch(request);
   },
@@ -92,10 +88,12 @@ export class MusicBrainzGateway {
       }
 
       if (url.pathname === "/albums") {
-        const genre = url.searchParams.get("genre").trim().slice(0, 100);
-        const cacheKey = `albums:${genre.toLowerCase()}`;
+        const genre = (url.searchParams.get("genre") || "").trim().slice(0, 100);
+        const cacheKey = `albums:${genre.toLowerCase() || "any"}`;
         const data = await this.getCached(cacheKey, 6 * 60 * 60 * 1000, async () => {
-          const query = `tag:"${escapeLucenePhrase(genre)}" AND primarytype:album`;
+          const query = genre
+            ? `tag:"${escapeLucenePhrase(genre)}" AND primarytype:album`
+            : "primarytype:album";
           const search = new URL(`${MUSICBRAINZ_BASE_URL}/release-group/`);
           search.searchParams.set("query", query);
           search.searchParams.set("fmt", "json");

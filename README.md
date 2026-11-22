@@ -1,8 +1,9 @@
 # Spinlist
 
-A no-build album-discovery site. Browse a curated crate or search MusicBrainz's
-genre list and album catalog by genre, release year, mood, and similar artists.
-Pick one random album at a time, and save favorites in your browser.
+A no-build album-discovery site. Browse MusicBrainz's album catalog across all
+genres or narrow it using the full genre list; refine picks by release year,
+mood, and similar artists. Pick one random album at a time, and save favorites
+in your browser.
 
 MusicBrainz supplies genre and album metadata through a Cloudflare Worker.
 Cover Art Archive artwork is shown when available, with generated covers as a
@@ -52,12 +53,12 @@ Worker's CORS allowlist. Spotify sign-in also requires HTTPS or localhost;
    development on port 8000. If your Pages site uses another origin, add it to
    `ALLOWED_ORIGINS` in `worker.mjs` before deploying.
 
-The Worker caches the complete genre list for 24 hours and each genre's album
-results for 6 hours. A single Durable Object serializes upstream calls to keep
-requests within MusicBrainz's rate limit. MusicBrainz search results are
-release groups tagged with the selected genre and filtered to albums; the
-interface displays up to 100 matches and randomly picks from the filtered set.
-Mood labels and similar-artist relationships remain curated Spinlist data.
+The Worker caches the complete genre list for 24 hours and album results for
+each genre (including the all-genres sample) for 6 hours. A single Durable
+Object serializes upstream calls to keep requests within MusicBrainz's rate
+limit. MusicBrainz search results are release groups filtered to albums; the
+interface samples up to 100 matches and randomly picks from the sample. Mood
+labels and similar-artist relationships remain curated Spinlist data.
 
 ## Publish with GitHub Pages
 

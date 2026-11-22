@@ -203,6 +203,7 @@ let spotifySearchTimer;
 let spotifySearchRequest = 0;
 let musicBrainzAlbums = [];
 let musicBrainzGenresLoaded = false;
+let musicBrainzCatalogLoaded = false;
 let musicBrainzGenreError = "";
 let musicBrainzStatusMessage = "";
 let musicBrainzSearchTimer;
@@ -315,7 +316,7 @@ function renderGenreChoices() {
     : genreOptions;
   const visibleGenres = (searchTerm ? matchingGenres : preferredGenres).slice(0, 40);
   const choices = [
-    { value: "all", label: "Any genre", count: albums.length },
+    { value: "all", label: "Any genre", count: null },
     ...visibleGenres.map((genre) => ({ value: genre, label: genre, count: genreCounts.get(genre) })),
     { value: "custom", label: "Other genre…", count: null },
   ];
@@ -585,7 +586,7 @@ async function loadMusicBrainzGenres() {
     musicBrainzGenresLoaded = true;
     musicBrainzGenreError = "";
     render();
-    if (getSelectedGenre()) scheduleMusicBrainzSearch();
+    scheduleMusicBrainzSearch();
   } catch (error) {
     console.error("Could not load MusicBrainz genres.", error);
     musicBrainzGenreError = error.message;
@@ -605,7 +606,7 @@ function mapMusicBrainzAlbums(data, genre) {
         title: album.title,
         artist: album.artist,
         year,
-        genre,
+        genre: genre || "Various genres",
         moods: seed ? seed.moods : [],
         related: seed ? seed.related : [],
         description: `${album.title} by ${album.artist}, listed in MusicBrainz.`,
@@ -618,18 +619,24 @@ function mapMusicBrainzAlbums(data, genre) {
 
 async function loadMusicBrainzCatalog(genre, requestId) {
   try {
-    const params = new URLSearchParams({ genre });
-    const data = await musicBrainzRequest(`/albums?${params}`);
+    const params = new URLSearchParams();
+    if (genre) params.set("genre", genre);
+    const query = params.toString();
+    const data = await musicBrainzRequest(`/albums${query ? `?${query}` : ""}`);
     if (requestId !== musicBrainzSearchRequest) return;
     musicBrainzAlbums = mapMusicBrainzAlbums(data, genre);
+    musicBrainzCatalogLoaded = true;
     musicBrainzStatusMessage = musicBrainzAlbums.length
-      ? `Found ${musicBrainzAlbums.length.toLocaleString()} MusicBrainz albums for ${genre}. Cover Art Archive images are shown when available.`
-      : `No MusicBrainz albums matched ${genre}; showing any curated picks.`;
+      ? genre
+        ? `Found ${musicBrainzAlbums.length.toLocaleString()} MusicBrainz albums for ${genre} (${Number(data.count || musicBrainzAlbums.length).toLocaleString()} matches).`
+        : `Loaded ${musicBrainzAlbums.length.toLocaleString()} albums across genres from ${Number(data.count || musicBrainzAlbums.length).toLocaleString()} MusicBrainz album groups.`
+      : `No MusicBrainz albums${genre ? ` matched ${genre}` : " were found"}; showing curated picks.`;
     render();
   } catch (error) {
     if (requestId !== musicBrainzSearchRequest) return;
     console.error("Could not search MusicBrainz albums.", error);
     musicBrainzAlbums = [];
+    musicBrainzCatalogLoaded = false;
     musicBrainzStatusMessage = `MusicBrainz search failed: ${error.message} Showing curated picks instead.`;
     render();
   }
@@ -640,22 +647,25 @@ function scheduleMusicBrainzSearch() {
   const requestId = ++musicBrainzSearchRequest;
   const genre = getSelectedGenre();
   musicBrainzAlbums = [];
+  musicBrainzCatalogLoaded = false;
   musicBrainzStatusMessage = "";
-  if (!musicBrainzApiBase || !genre || showSavedOnly || selectedMoods.size > 0) {
+  if (!musicBrainzApiBase || showSavedOnly || selectedMoods.size > 0) {
     render();
     return;
   }
-  musicBrainzStatusMessage = `Searching MusicBrainz for ${genre} albums…`;
+  musicBrainzStatusMessage = genre
+    ? `Searching MusicBrainz for ${genre} albums…`
+    : "Searching MusicBrainz albums across all genres…";
   render();
   musicBrainzSearchTimer = window.setTimeout(() => loadMusicBrainzCatalog(genre, requestId), 350);
 }
 
 function render() {
   const selectedGenre = getSelectedGenre();
-  let isMusicBrainzSearch = Boolean(musicBrainzApiBase && selectedGenre && !showSavedOnly && selectedMoods.size === 0 && musicBrainzAlbums.length > 0);
+  let isMusicBrainzSearch = Boolean(musicBrainzApiBase && !showSavedOnly && selectedMoods.size === 0 && musicBrainzCatalogLoaded && musicBrainzAlbums.length > 0);
   let isSpotifySearch = !isMusicBrainzSearch
     && spotifyCatalogMode
-    && (!musicBrainzApiBase || !selectedGenre)
+    && !musicBrainzApiBase
     && !showSavedOnly
     && selectedMoods.size === 0
     && spotifyAlbums.length > 0;
@@ -693,12 +703,12 @@ function render() {
   if (musicBrainzStatusMessage) {
     elements.catalogStatus.textContent = musicBrainzStatusMessage;
   } else if (musicBrainzApiBase && musicBrainzGenresLoaded && !showSavedOnly && !selectedGenre) {
-    elements.catalogStatus.textContent = `MusicBrainz is ready. Search ${genreOptions.length.toLocaleString()} genres to find albums.`;
+    elements.catalogStatus.textContent = `Browsing MusicBrainz across all genres. Search ${genreOptions.length.toLocaleString()} genres to narrow the crate.`;
   } else if (selectedGenre && !musicBrainzApiBase && isSpotifySearch && !showSavedOnly) {
     elements.catalogStatus.textContent = "Browsing Spotify’s catalog. Mood and similar-artist discovery use Spinlist’s curated picks.";
   } else if (selectedGenre && !musicBrainzApiBase && !showSavedOnly) {
     elements.catalogStatus.textContent = "MusicBrainz Worker is not configured. Showing the curated crate.";
-  } else if (selectedGenre && musicBrainzApiBase && !showSavedOnly && selectedMoods.size === 0) {
+  } else if (musicBrainzApiBase && !showSavedOnly && selectedMoods.size === 0) {
     elements.catalogStatus.textContent = "Searching MusicBrainz…";
   } else if (spotifyCatalogMode && selectedMoods.size > 0 && !showSavedOnly) {
     elements.catalogStatus.textContent = "Mood tags are editorial, not part of Spotify’s catalog. Showing curated picks for your selected mood.";
@@ -1065,7 +1075,7 @@ async function loadSpotifyCatalog(requestId) {
 
 function scheduleSpotifySearch() {
   if (!spotifyCatalogMode) return;
-  if (musicBrainzApiBase && getSelectedGenre()) {
+  if (musicBrainzApiBase) {
     window.clearTimeout(spotifySearchTimer);
     spotifySearchRequest += 1;
     return;
