@@ -56,9 +56,11 @@ Worker's CORS allowlist. Spotify sign-in also requires HTTPS or localhost;
 The Worker caches the complete genre list for 24 hours and album results for
 each genre (including the all-genres sample) for 6 hours. A single Durable
 Object serializes upstream calls to keep requests within MusicBrainz's rate
-limit. MusicBrainz search results are release groups filtered to albums; the
-interface samples up to 100 matches and randomly picks from the sample. Mood
-labels and similar-artist relationships remain curated Spinlist data.
+limit. With no year, artist, text, or mood refinements, each pick samples a new
+random release-group ID prefix from the matching MusicBrainz catalog, rather
+than choosing from the same first 100 results. Applying refinements searches
+within the fetched results. Mood labels and similar-artist relationships remain
+curated Spinlist data.
 
 ## Publish with GitHub Pages
 

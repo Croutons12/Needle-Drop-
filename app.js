@@ -204,6 +204,8 @@ let spotifySearchRequest = 0;
 let musicBrainzAlbums = [];
 let musicBrainzGenresLoaded = false;
 let musicBrainzCatalogLoaded = false;
+let musicBrainzRandomMode = false;
+let musicBrainzSearchPending = false;
 let musicBrainzGenreError = "";
 let musicBrainzStatusMessage = "";
 let musicBrainzSearchTimer;
@@ -619,23 +621,27 @@ function mapMusicBrainzAlbums(data, genre) {
     });
 }
 
-async function loadMusicBrainzCatalog(genre, requestId) {
+async function loadMusicBrainzCatalog(genre, requestId, randomMode) {
   try {
     const params = new URLSearchParams();
     if (genre) params.set("genre", genre);
     const query = params.toString();
-    const data = await musicBrainzRequest(`/albums${query ? `?${query}` : ""}`);
+    const data = await musicBrainzRequest(`${randomMode ? "/random-album" : "/albums"}${query ? `?${query}` : ""}`);
     if (requestId !== musicBrainzSearchRequest) return;
-    musicBrainzAlbums = mapMusicBrainzAlbums(data, genre);
+    musicBrainzSearchPending = false;
+    musicBrainzAlbums = mapMusicBrainzAlbums(randomMode ? { albums: data.album ? [data.album] : [] } : data, genre);
     musicBrainzCatalogLoaded = true;
     musicBrainzStatusMessage = musicBrainzAlbums.length
-      ? genre
-        ? `Found ${musicBrainzAlbums.length.toLocaleString()} MusicBrainz albums for ${genre} (${Number(data.count || musicBrainzAlbums.length).toLocaleString()} matches).`
-        : `Loaded ${musicBrainzAlbums.length.toLocaleString()} albums across genres from ${Number(data.count || musicBrainzAlbums.length).toLocaleString()} MusicBrainz album groups.`
+      ? randomMode
+        ? `Randomly picked from ${Number(data.count || 0).toLocaleString()} MusicBrainz albums${genre ? ` tagged ${genre}` : " across all genres"}.`
+        : genre
+          ? `Found ${musicBrainzAlbums.length.toLocaleString()} MusicBrainz albums for ${genre} (${Number(data.count || musicBrainzAlbums.length).toLocaleString()} matches).`
+          : `Loaded ${musicBrainzAlbums.length.toLocaleString()} albums across genres from ${Number(data.count || musicBrainzAlbums.length).toLocaleString()} MusicBrainz album groups.`
       : `No MusicBrainz albums${genre ? ` matched ${genre}` : " were found"}; showing curated picks.`;
     render();
   } catch (error) {
     if (requestId !== musicBrainzSearchRequest) return;
+    musicBrainzSearchPending = false;
     console.error("Could not search MusicBrainz albums.", error);
     musicBrainzAlbums = [];
     musicBrainzCatalogLoaded = false;
@@ -648,18 +654,29 @@ function scheduleMusicBrainzSearch() {
   window.clearTimeout(musicBrainzSearchTimer);
   const requestId = ++musicBrainzSearchRequest;
   const genre = getSelectedGenre();
+  musicBrainzRandomMode = Boolean(musicBrainzApiBase)
+    && !showSavedOnly
+    && selectedMoods.size === 0
+    && elements.artist.value === "all"
+    && !elements.yearFrom.value
+    && !elements.yearTo.value
+    && !elements.search.value.trim();
   musicBrainzAlbums = [];
   musicBrainzCatalogLoaded = false;
+  musicBrainzSearchPending = false;
   musicBrainzStatusMessage = "";
   if (!musicBrainzApiBase || showSavedOnly || selectedMoods.size > 0) {
     render();
     return;
   }
-  musicBrainzStatusMessage = genre
-    ? `Searching MusicBrainz for ${genre} albums…`
-    : "Searching MusicBrainz albums across all genres…";
+  musicBrainzStatusMessage = musicBrainzRandomMode
+    ? `Finding a random MusicBrainz album${genre ? ` tagged ${genre}` : " across all genres"}…`
+    : genre
+      ? `Searching MusicBrainz for ${genre} albums…`
+      : "Searching MusicBrainz albums across all genres…";
+  musicBrainzSearchPending = true;
   render();
-  musicBrainzSearchTimer = window.setTimeout(() => loadMusicBrainzCatalog(genre, requestId), 350);
+  musicBrainzSearchTimer = window.setTimeout(() => loadMusicBrainzCatalog(genre, requestId, musicBrainzRandomMode), 350);
 }
 
 function render() {
@@ -700,7 +717,11 @@ function render() {
   elements.pickCaption.textContent = pickedAlbum
     ? `${pickedAlbum.genre.toUpperCase()}  ·  ${pickedAlbum.year || "YEAR UNKNOWN"}  ·  PICKED AT RANDOM`
     : "No albums match these filters.";
-  elements.surpriseButton.disabled = currentResults.length < 2;
+  elements.surpriseButton.disabled = musicBrainzRandomMode && musicBrainzSearchPending
+    ? true
+    : musicBrainzRandomMode && isMusicBrainzSearch
+      ? false
+      : currentResults.length < 2;
   renderGenreChoices();
   if (musicBrainzStatusMessage) {
     elements.catalogStatus.textContent = musicBrainzStatusMessage;
@@ -1204,6 +1225,11 @@ elements.savedToggle.addEventListener("click", () => {
   scheduleMusicBrainzSearch();
 });
 elements.surpriseButton.addEventListener("click", () => {
+  if (musicBrainzRandomMode) {
+    pickedAlbum = null;
+    scheduleMusicBrainzSearch();
+    return;
+  }
   const options = currentResults.filter((album) => album.id !== pickedAlbum?.id);
   if (options.length) pickedAlbum = options[Math.floor(Math.random() * options.length)];
   else if (currentResults.length) pickedAlbum = currentResults[0];
