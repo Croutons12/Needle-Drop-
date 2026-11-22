@@ -378,7 +378,9 @@ function getFilteredAlbums(source = albums) {
     const matchesSearch = !search || source === spotifyAlbums || searchable.includes(search);
     const matchesGenre = source === spotifyAlbums || source === musicBrainzAlbums || !genre || album.genre === genre;
     const matchesArtist = artist === "all" || album.artist === artist || album.related.includes(artist);
-    const matchesYears = album.year >= from && album.year <= to;
+    const matchesYears = album.year
+      ? album.year >= from && album.year <= to
+      : from === -Infinity && to === Infinity;
     const matchesMoods = [...selectedMoods].every((mood) => album.moods.includes(mood));
     const matchesSaved = !showSavedOnly || savedAlbums.has(album.id);
     return matchesSearch && matchesGenre && matchesArtist && matchesYears && matchesMoods && matchesSaved;
@@ -394,7 +396,7 @@ function renderGeneratedCover(cover, album, albumIndex) {
   geometry.className = "cover-geometry";
   const topline = document.createElement("span");
   topline.className = "cover-topline";
-  topline.textContent = `SPINLIST  /  ${album.year}`;
+  topline.textContent = `SPINLIST  /  ${album.year || "YEAR UNKNOWN"}`;
   const bigtitle = document.createElement("span");
   bigtitle.className = "cover-bigtitle";
   bigtitle.textContent = album.title;
@@ -504,9 +506,9 @@ function renderCard(album) {
   const meta = document.createElement("div");
   meta.className = "album-meta";
   const year = document.createElement("span");
-  year.textContent = album.year;
+  year.textContent = album.year || "YEAR UNKNOWN";
   const mood = document.createElement("span");
-  mood.textContent = (album.moods[0] || "SPOTIFY PICK").toUpperCase();
+  mood.textContent = (album.moods[0] || (album.id.startsWith("musicbrainz:") ? "MUSICBRAINZ PICK" : "SPOTIFY PICK")).toUpperCase();
   meta.append(year, mood);
 
   info.append(genre, titleRow, meta);
@@ -599,7 +601,7 @@ function mapMusicBrainzAlbums(data, genre) {
   return (data.albums || [])
     .filter((album) => album && album.id && album.title && album.artist)
     .map((album) => {
-      const year = Number.parseInt(album.firstReleaseDate, 10) || 0;
+      const year = Number.parseInt(album.firstReleaseDate, 10) || null;
       const seed = albums.find((item) => item.artist.toLowerCase() === album.artist.toLowerCase());
       return {
         id: `musicbrainz:${album.id}`,
@@ -696,7 +698,7 @@ function render() {
   elements.emptyState.hidden = Boolean(pickedAlbum);
   elements.count.textContent = `${String(currentResults.length).padStart(2, "0")} ${showSavedOnly ? "SAVED ALBUMS" : isMusicBrainzSearch ? "MUSICBRAINZ ALBUMS" : spotifyCatalogMode && isSpotifySearch ? "SPOTIFY ALBUMS" : "ALBUMS TO PICK FROM"}`;
   elements.pickCaption.textContent = pickedAlbum
-    ? `${pickedAlbum.genre.toUpperCase()}  ·  ${pickedAlbum.year}  ·  PICKED AT RANDOM`
+    ? `${pickedAlbum.genre.toUpperCase()}  ·  ${pickedAlbum.year || "YEAR UNKNOWN"}  ·  PICKED AT RANDOM`
     : "No albums match these filters.";
   elements.surpriseButton.disabled = currentResults.length < 2;
   renderGenreChoices();
@@ -783,7 +785,7 @@ function renderAlbumDialog(album) {
   artist.textContent = album.artist;
   const year = document.createElement("p");
   year.className = "album-detail-year";
-  year.textContent = `${album.year}${album.moods.length ? `  ·  ${album.moods.join("  /  ").toUpperCase()}` : ""}`;
+  year.textContent = `${album.year || "YEAR UNKNOWN"}${album.moods.length ? `  ·  ${album.moods.join("  /  ").toUpperCase()}` : ""}`;
   const description = document.createElement("p");
   description.className = "dialog-description";
   description.textContent = album.description;
