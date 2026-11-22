@@ -24,6 +24,17 @@ Worker's CORS allowlist. Spotify sign-in also requires HTTPS or localhost;
    `wrangler.toml`.
 2. Authenticate and deploy:
 
+   In Windows PowerShell, use the `.cmd` launchers so PowerShell's script
+   execution policy does not block `npm.ps1` or `npx.ps1`:
+
+   ```powershell
+   npm.cmd -v
+   npx.cmd wrangler login
+   npx.cmd wrangler deploy
+   ```
+
+   On macOS, Linux, or a terminal that allows the standard launchers:
+
    ```sh
    npx wrangler login
    npx wrangler deploy
