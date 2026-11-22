@@ -123,7 +123,19 @@ h1 em, h2 em { color: var(--accent); font-family: var(--serif); font-weight: 500
 .panel-heading .eyebrow { margin-bottom: 8px; color: var(--muted-dim); }
 h2 { margin: 0; font-size: clamp(24px, 3vw, 33px); line-height: 1.08; letter-spacing: -1.4px; font-weight: 600; }
 .genre-count { padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 7px; white-space: nowrap; }
-.genre-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.genre-search {
+  width: 100%;
+  height: 38px;
+  margin-bottom: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111716;
+  color: var(--text);
+  font-size: 10px;
+}
+.genre-search::placeholder { color: var(--muted-dim); }
+.genre-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; max-height: 390px; overflow-y: auto; align-content: start; padding-right: 3px; }
 .genre-choice {
   min-width: 0;
   min-height: 37px;
@@ -145,7 +157,7 @@ h2 { margin: 0; font-size: clamp(24px, 3vw, 33px); line-height: 1.08; letter-spa
 .genre-choice[aria-pressed="true"] { border-color: var(--accent); background: #29351f; color: var(--accent); }
 .genre-choice-count { color: var(--muted-dim); font-size: 7px; }
 .genre-choice[aria-pressed="true"] .genre-choice-count { color: var(--accent); }
-.genre-note { margin: 12px 0 0; color: var(--muted-dim); font-size: 7px; letter-spacing: .3px; }
+.genre-note { margin: 12px 0 0; color: var(--muted-dim); font-size: 8px; line-height: 1.5; letter-spacing: .2px; }
 .custom-genre-input {
   width: 100%;
   height: 38px;
@@ -421,7 +433,7 @@ h2 { margin: 0; font-size: clamp(24px, 3vw, 33px); line-height: 1.08; letter-spa
   .welcome-copy > p:last-child { max-width: 400px; margin-top: 12px; font-size: 11px; }
   .picker-layout { gap: 15px; padding: 17px 0 42px; }
   .genre-panel { padding: 15px; }
-  .genre-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .genre-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-height: 320px; }
   .genre-choice { min-height: 35px; padding: 6px 7px; font-size: 9px; }
   .genre-choice-count { font-size: 6px; }
   .genre-note { font-size: 6px; }

@@ -1,21 +1,52 @@
 # Spinlist
 
-A no-build album-discovery site. Browse a curated crate by genre, release year,
-mood, and similar artists. Pick one random album at a time, and save favorites
-in your browser.
+A no-build album-discovery site. Browse a curated crate or search MusicBrainz's
+genre list and album catalog by genre, release year, mood, and similar artists.
+Pick one random album at a time, and save favorites in your browser.
 
-Connect your own Spotify developer app to search Spotify's catalog for albums,
-artists, release dates, and artwork. Spotify search uses OAuth Authorization
-Code with PKCE; the site never asks for or stores a client secret. Spotify
-catalog results can be saved locally and opened in Spotify. Mood and similar
-artist discovery remain based on the curated crate because those aren't
-available as reliable Spotify catalog recommendation data.
+MusicBrainz supplies genre and album metadata through a Cloudflare Worker.
+Cover Art Archive artwork is shown when available, with generated covers as a
+fallback. Album listening links open Spotify search. You can also connect your
+own Spotify developer app to search its catalog; Spotify sign-in uses OAuth
+Authorization Code with PKCE and never asks for or stores a client secret.
 
 ## Run locally
 
-Open `index.html` in a browser to use the curated crate. Spotify sign-in requires
-serving the site from HTTPS or localhost; `file://` does not support the
-OAuth redirect flow.
+Run `python -m http.server 8000` from the repository root, then open
+`http://localhost:8000`. This serves the curated crate and supports the local
+Worker's CORS allowlist. Spotify sign-in also requires HTTPS or localhost;
+`file://` does not support its OAuth redirect flow.
+
+## Enable MusicBrainz
+
+1. Create a Cloudflare account and install or run Wrangler from the repository
+   root. The Worker and its Durable Object definition are in `worker.mjs` and
+   `wrangler.toml`.
+2. Authenticate and deploy:
+
+   ```sh
+   npx wrangler login
+   npx wrangler deploy
+   ```
+
+3. Copy the deployed Worker URL (usually ending in `.workers.dev`) into
+   `musicbrainz-config.js`:
+
+   ```js
+   window.SPINLIST_MUSICBRAINZ_API = "https://your-worker.your-subdomain.workers.dev";
+   ```
+
+4. Publish the site again with that configuration. The Worker allows the
+   current GitHub Pages origin (`https://croutons12.github.io`) and local
+   development on port 8000. If your Pages site uses another origin, add it to
+   `ALLOWED_ORIGINS` in `worker.mjs` before deploying.
+
+The Worker caches the complete genre list for 24 hours and each genre's album
+results for 6 hours. A single Durable Object serializes upstream calls to keep
+requests within MusicBrainz's rate limit. MusicBrainz search results are
+release groups tagged with the selected genre and filtered to albums; the
+interface displays up to 100 matches and randomly picks from the filtered set.
+Mood labels and similar-artist relationships remain curated Spinlist data.
 
 ## Publish with GitHub Pages
 
@@ -36,5 +67,5 @@ The site is static and can be served directly from the repository root.
    Spotify client secret; this static site does not need one.
 
 Spotify's Development Mode and API quota rules apply to the app you create.
-See [privacy.html](./privacy.html) for information about locally stored favorites
-and Spotify session data.
+See [privacy.html](./privacy.html) for information about locally stored
+favorites, Spotify session data, and MusicBrainz requests.

@@ -150,10 +150,13 @@ const savedStorageKey = "needle-drop-saved-albums";
 const savedDetailsStorageKey = "needle-drop-saved-album-details";
 const spotifyClientStorageKey = "needle-drop-spotify-client-id";
 const spotifyTokenStorageKey = "needle-drop-spotify-token";
+const musicBrainzApiBase = (window.SPINLIST_MUSICBRAINZ_API || "").trim().replace(/\/+$/, "");
 const elements = {
   genre: document.querySelector("#genre-filter"),
   genreChoices: document.querySelector("#genre-choices"),
   genreCount: document.querySelector("#genre-count"),
+  genreSearch: document.querySelector("#genre-search"),
+  genreNote: document.querySelector("#genre-note"),
   customGenre: document.querySelector("#custom-genre"),
   refinements: document.querySelector("#refinements"),
   artist: document.querySelector("#artist-filter"),
@@ -182,7 +185,8 @@ const elements = {
 };
 
 const selectedMoods = new Set();
-const genreOptions = [...new Set(albums.map((album) => album.genre))].sort((a, b) => a.localeCompare(b));
+const localGenreOptions = [...new Set(albums.map((album) => album.genre))].sort((a, b) => a.localeCompare(b));
+let genreOptions = [...localGenreOptions];
 const genreCounts = new Map(genreOptions.map((genre) => [genre, albums.filter((album) => album.genre === genre).length]));
 let savedAlbums = readSavedAlbums();
 let savedAlbumDetails = readSavedAlbumDetails();
@@ -197,6 +201,12 @@ let spotifyAlbums = [];
 let spotifyCatalogMode = false;
 let spotifySearchTimer;
 let spotifySearchRequest = 0;
+let musicBrainzAlbums = [];
+let musicBrainzGenresLoaded = false;
+let musicBrainzGenreError = "";
+let musicBrainzStatusMessage = "";
+let musicBrainzSearchTimer;
+let musicBrainzSearchRequest = 0;
 
 function readSavedAlbums() {
   try {
@@ -229,11 +239,35 @@ function populateSelect(select, options, firstLabel) {
   select.options[0].textContent = firstLabel;
 }
 
-populateSelect(elements.genre, genreOptions, "Any genre");
-const customGenreOption = document.createElement("option");
-customGenreOption.value = "custom";
-customGenreOption.textContent = "Other genre…";
-elements.genre.append(customGenreOption);
+function populateGenreSelect(options, selectedGenre = "") {
+  elements.genre.replaceChildren();
+  const anyGenre = document.createElement("option");
+  anyGenre.value = "all";
+  anyGenre.textContent = "Any genre";
+  elements.genre.append(anyGenre);
+  populateSelect(elements.genre, options, "Any genre");
+  const customGenreOption = document.createElement("option");
+  customGenreOption.value = "custom";
+  customGenreOption.textContent = "Other genre…";
+  elements.genre.append(customGenreOption);
+
+  const exactGenre = options.find((genre) => genre.toLowerCase() === selectedGenre.toLowerCase());
+  if (exactGenre) {
+    elements.genre.value = exactGenre;
+    elements.customGenre.value = "";
+    elements.customGenre.hidden = true;
+  } else if (selectedGenre) {
+    elements.genre.value = "custom";
+    elements.customGenre.value = selectedGenre;
+    elements.customGenre.hidden = false;
+  } else {
+    elements.genre.value = "all";
+    elements.customGenre.value = "";
+    elements.customGenre.hidden = true;
+  }
+}
+
+populateGenreSelect(genreOptions);
 populateSelect(
   elements.artist,
   [...new Set(albums.flatMap((album) => [album.artist, ...album.related]))].sort(),
@@ -255,6 +289,14 @@ function getSelectedGenre() {
   return elements.genre.value === "all" ? "" : elements.genre.value;
 }
 
+function setGenreOptions(options) {
+  const selectedGenre = getSelectedGenre();
+  genreOptions = [...new Set(options.filter((genre) => typeof genre === "string" && genre.trim()))]
+    .map((genre) => genre.trim())
+    .sort((a, b) => a.localeCompare(b));
+  populateGenreSelect(genreOptions, selectedGenre);
+}
+
 for (const mood of moods) {
   const button = document.createElement("button");
   button.type = "button";
@@ -266,13 +308,32 @@ for (const mood of moods) {
 }
 
 function renderGenreChoices() {
+  const searchTerm = elements.genreSearch.value.trim().toLowerCase();
+  const matchingGenres = genreOptions.filter((genre) => genre.toLowerCase().includes(searchTerm));
+  const preferredGenres = musicBrainzGenresLoaded
+    ? localGenreOptions.filter((genre) => genreOptions.some((option) => option.toLowerCase() === genre.toLowerCase()))
+    : genreOptions;
+  const visibleGenres = (searchTerm ? matchingGenres : preferredGenres).slice(0, 40);
   const choices = [
     { value: "all", label: "Any genre", count: albums.length },
-    ...genreOptions.map((genre) => ({ value: genre, label: genre, count: genreCounts.get(genre) })),
+    ...visibleGenres.map((genre) => ({ value: genre, label: genre, count: genreCounts.get(genre) })),
     { value: "custom", label: "Other genre…", count: null },
   ];
-  elements.genreCount.textContent = `${genreOptions.length} GENRES`;
+  elements.genreCount.textContent = `${genreOptions.length.toLocaleString()} GENRES`;
   elements.genreChoices.replaceChildren();
+  if (musicBrainzGenresLoaded) {
+    elements.genreNote.textContent = searchTerm
+      ? matchingGenres.length > visibleGenres.length
+        ? `Showing 40 of ${matchingGenres.length.toLocaleString()} matches. Refine your search.`
+        : `${matchingGenres.length.toLocaleString()} matching MusicBrainz genres.`
+      : `Search all ${genreOptions.length.toLocaleString()} MusicBrainz genres, or choose a starting genre.`;
+  } else if (musicBrainzGenreError) {
+    elements.genreNote.textContent = `Could not load MusicBrainz genres: ${musicBrainzGenreError}`;
+  } else if (musicBrainzApiBase) {
+    elements.genreNote.textContent = "Loading the MusicBrainz genre list…";
+  } else {
+    elements.genreNote.textContent = "Set up the MusicBrainz Worker to browse the full genre list. Curated genres are available now.";
+  }
 
   for (const choice of choices) {
     const button = document.createElement("button");
@@ -283,7 +344,7 @@ function renderGenreChoices() {
     const label = document.createElement("span");
     label.textContent = choice.label;
     button.append(label);
-    if (choice.count !== null) {
+    if (choice.count !== null && choice.count !== undefined) {
       const count = document.createElement("span");
       count.className = "genre-choice-count";
       count.textContent = String(choice.count).padStart(2, "0");
@@ -297,6 +358,7 @@ function renderGenreChoices() {
       pickedAlbum = null;
       render();
       scheduleSpotifySearch();
+      scheduleMusicBrainzSearch();
       if (choice.value === "custom") elements.customGenre.focus();
     });
     elements.genreChoices.append(button);
@@ -313,7 +375,7 @@ function getFilteredAlbums(source = albums) {
   return source.filter((album) => {
     const searchable = [album.title, album.artist, album.genre, ...album.related].join(" ").toLowerCase();
     const matchesSearch = !search || source === spotifyAlbums || searchable.includes(search);
-    const matchesGenre = source === spotifyAlbums || !genre || album.genre === genre;
+    const matchesGenre = source === spotifyAlbums || source === musicBrainzAlbums || !genre || album.genre === genre;
     const matchesArtist = artist === "all" || album.artist === artist || album.related.includes(artist);
     const matchesYears = album.year >= from && album.year <= to;
     const matchesMoods = [...selectedMoods].every((mood) => album.moods.includes(mood));
@@ -322,21 +384,9 @@ function getFilteredAlbums(source = albums) {
   });
 }
 
-function createCover(album) {
-  const cover = document.createElement("span");
-  const albumIndex = albums.indexOf(album);
-  cover.className = album.imageUrl ? "cover-art spotify-cover" : `cover-art cover--${(Math.max(albumIndex, 0) % 8) + 1}`;
-  cover.setAttribute("aria-hidden", "true");
-  if (album.imageUrl) {
-    const image = document.createElement("img");
-    image.className = "spotify-cover-image";
-    image.src = album.imageUrl;
-    image.alt = "";
-    image.loading = "lazy";
-    image.referrerPolicy = "no-referrer";
-    cover.append(image);
-    return cover;
-  }
+function renderGeneratedCover(cover, album, albumIndex) {
+  cover.className = `cover-art cover--${(Math.max(albumIndex, 0) % 8) + 1}`;
+  cover.replaceChildren();
   const tone = document.createElement("span");
   tone.className = "cover-tone";
   const geometry = document.createElement("span");
@@ -354,6 +404,28 @@ function createCover(album) {
   catalog.className = "cover-catalog";
   catalog.textContent = "FULL ALBUM  ·  33⅓ RPM";
   cover.append(tone, geometry, topline, bigtitle, smalltitle, catalog);
+}
+
+function createCover(album) {
+  const cover = document.createElement("span");
+  const albumIndex = albums.indexOf(album);
+  cover.className = album.imageUrl ? "cover-art spotify-cover" : `cover-art cover--${(Math.max(albumIndex, 0) % 8) + 1}`;
+  cover.setAttribute("aria-hidden", "true");
+  if (album.imageUrl) {
+    const image = document.createElement("img");
+    image.className = "spotify-cover-image";
+    image.src = album.imageUrl;
+    image.alt = "";
+    image.loading = "lazy";
+    image.referrerPolicy = "no-referrer";
+    image.addEventListener("error", () => {
+      renderGeneratedCover(cover, album, albumIndex);
+      cover.closest(".cover-button")?.classList.remove("spotify-cover-button");
+    }, { once: true });
+    cover.append(image);
+    return cover;
+  }
+  renderGeneratedCover(cover, album, albumIndex);
   return cover;
 }
 
@@ -476,20 +548,130 @@ function renderActiveFilters() {
       filter.clear();
       render();
       scheduleSpotifySearch();
+      scheduleMusicBrainzSearch();
     });
     chip.append(clear);
     elements.activeFilters.append(chip);
   }
 }
 
+async function musicBrainzRequest(path) {
+  if (!musicBrainzApiBase) throw new Error("The MusicBrainz Worker is not configured.");
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 20_000);
+  let response;
+  try {
+    response = await fetch(`${musicBrainzApiBase}${path}`, { signal: controller.signal });
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("MusicBrainz took too long to respond. Please try again.");
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || `MusicBrainz request failed (${response.status}).`);
+  return data;
+}
+
+async function loadMusicBrainzGenres() {
+  if (!musicBrainzApiBase) return;
+  elements.genreNote.textContent = "Loading the MusicBrainz genre list…";
+  try {
+    const data = await musicBrainzRequest("/genres");
+    if (!Array.isArray(data.genres) || data.genres.length === 0) {
+      throw new Error("The MusicBrainz Worker returned no genres.");
+    }
+    setGenreOptions(data.genres);
+    musicBrainzGenresLoaded = true;
+    musicBrainzGenreError = "";
+    render();
+    if (getSelectedGenre()) scheduleMusicBrainzSearch();
+  } catch (error) {
+    console.error("Could not load MusicBrainz genres.", error);
+    musicBrainzGenreError = error.message;
+    musicBrainzStatusMessage = `Could not load MusicBrainz genres: ${error.message}`;
+    render();
+  }
+}
+
+function mapMusicBrainzAlbums(data, genre) {
+  return (data.albums || [])
+    .filter((album) => album && album.id && album.title && album.artist)
+    .map((album) => {
+      const year = Number.parseInt(album.firstReleaseDate, 10) || 0;
+      const seed = albums.find((item) => item.artist.toLowerCase() === album.artist.toLowerCase());
+      return {
+        id: `musicbrainz:${album.id}`,
+        title: album.title,
+        artist: album.artist,
+        year,
+        genre,
+        moods: seed ? seed.moods : [],
+        related: seed ? seed.related : [],
+        description: `${album.title} by ${album.artist}, listed in MusicBrainz.`,
+        imageUrl: `https://coverartarchive.org/release-group/${encodeURIComponent(album.id)}/front-250`,
+        musicBrainzUrl: `https://musicbrainz.org/release-group/${encodeURIComponent(album.id)}`,
+        spotifyUrl: `https://open.spotify.com/search/${encodeURIComponent(`${album.artist} ${album.title}`)}`,
+      };
+    });
+}
+
+async function loadMusicBrainzCatalog(genre, requestId) {
+  try {
+    const params = new URLSearchParams({ genre });
+    const data = await musicBrainzRequest(`/albums?${params}`);
+    if (requestId !== musicBrainzSearchRequest) return;
+    musicBrainzAlbums = mapMusicBrainzAlbums(data, genre);
+    musicBrainzStatusMessage = musicBrainzAlbums.length
+      ? `Found ${musicBrainzAlbums.length.toLocaleString()} MusicBrainz albums for ${genre}. Cover Art Archive images are shown when available.`
+      : `No MusicBrainz albums matched ${genre}; showing any curated picks.`;
+    render();
+  } catch (error) {
+    if (requestId !== musicBrainzSearchRequest) return;
+    console.error("Could not search MusicBrainz albums.", error);
+    musicBrainzAlbums = [];
+    musicBrainzStatusMessage = `MusicBrainz search failed: ${error.message} Showing curated picks instead.`;
+    render();
+  }
+}
+
+function scheduleMusicBrainzSearch() {
+  window.clearTimeout(musicBrainzSearchTimer);
+  const requestId = ++musicBrainzSearchRequest;
+  const genre = getSelectedGenre();
+  musicBrainzAlbums = [];
+  musicBrainzStatusMessage = "";
+  if (!musicBrainzApiBase || !genre || showSavedOnly || selectedMoods.size > 0) {
+    render();
+    return;
+  }
+  musicBrainzStatusMessage = `Searching MusicBrainz for ${genre} albums…`;
+  render();
+  musicBrainzSearchTimer = window.setTimeout(() => loadMusicBrainzCatalog(genre, requestId), 350);
+}
+
 function render() {
-  let isSpotifySearch = spotifyCatalogMode && !showSavedOnly && selectedMoods.size === 0 && spotifyAlbums.length > 0;
-  const source = isSpotifySearch
-    ? spotifyAlbums
+  const selectedGenre = getSelectedGenre();
+  let isMusicBrainzSearch = Boolean(musicBrainzApiBase && selectedGenre && !showSavedOnly && selectedMoods.size === 0 && musicBrainzAlbums.length > 0);
+  let isSpotifySearch = !isMusicBrainzSearch
+    && spotifyCatalogMode
+    && (!musicBrainzApiBase || !selectedGenre)
+    && !showSavedOnly
+    && selectedMoods.size === 0
+    && spotifyAlbums.length > 0;
+  const source = isMusicBrainzSearch
+    ? musicBrainzAlbums
+    : isSpotifySearch
+      ? spotifyAlbums
     : showSavedOnly
       ? [...albums, ...savedAlbumDetails.values()].filter((album, index, all) => all.findIndex((item) => item.id === album.id) === index)
       : albums;
   currentResults = getFilteredAlbums(source);
+  if (isMusicBrainzSearch && currentResults.length === 0) {
+    isMusicBrainzSearch = false;
+    currentResults = getFilteredAlbums(albums);
+    musicBrainzStatusMessage = "No MusicBrainz albums match those refinements. Showing matching curated picks instead.";
+  }
   if (isSpotifySearch && currentResults.length === 0) {
     isSpotifySearch = false;
     currentResults = getFilteredAlbums(albums);
@@ -502,14 +684,28 @@ function render() {
   elements.grid.replaceChildren(fragment);
   elements.grid.hidden = !pickedAlbum;
   elements.emptyState.hidden = Boolean(pickedAlbum);
-  elements.count.textContent = `${String(currentResults.length).padStart(2, "0")} ${showSavedOnly ? "SAVED ALBUMS" : spotifyCatalogMode && isSpotifySearch ? "SPOTIFY ALBUMS" : "ALBUMS TO PICK FROM"}`;
+  elements.count.textContent = `${String(currentResults.length).padStart(2, "0")} ${showSavedOnly ? "SAVED ALBUMS" : isMusicBrainzSearch ? "MUSICBRAINZ ALBUMS" : spotifyCatalogMode && isSpotifySearch ? "SPOTIFY ALBUMS" : "ALBUMS TO PICK FROM"}`;
   elements.pickCaption.textContent = pickedAlbum
     ? `${pickedAlbum.genre.toUpperCase()}  ·  ${pickedAlbum.year}  ·  PICKED AT RANDOM`
     : "No albums match these filters.";
   elements.surpriseButton.disabled = currentResults.length < 2;
   renderGenreChoices();
-  if (spotifyCatalogMode && selectedMoods.size > 0 && !showSavedOnly) {
+  if (musicBrainzStatusMessage) {
+    elements.catalogStatus.textContent = musicBrainzStatusMessage;
+  } else if (musicBrainzApiBase && musicBrainzGenresLoaded && !showSavedOnly && !selectedGenre) {
+    elements.catalogStatus.textContent = `MusicBrainz is ready. Search ${genreOptions.length.toLocaleString()} genres to find albums.`;
+  } else if (selectedGenre && !musicBrainzApiBase && isSpotifySearch && !showSavedOnly) {
+    elements.catalogStatus.textContent = "Browsing Spotify’s catalog. Mood and similar-artist discovery use Spinlist’s curated picks.";
+  } else if (selectedGenre && !musicBrainzApiBase && !showSavedOnly) {
+    elements.catalogStatus.textContent = "MusicBrainz Worker is not configured. Showing the curated crate.";
+  } else if (selectedGenre && musicBrainzApiBase && !showSavedOnly && selectedMoods.size === 0) {
+    elements.catalogStatus.textContent = "Searching MusicBrainz…";
+  } else if (spotifyCatalogMode && selectedMoods.size > 0 && !showSavedOnly) {
     elements.catalogStatus.textContent = "Mood tags are editorial, not part of Spotify’s catalog. Showing curated picks for your selected mood.";
+  } else if (musicBrainzApiBase && selectedMoods.size > 0 && !showSavedOnly) {
+    elements.catalogStatus.textContent = "Mood tags are editorial. Showing curated picks for your selected mood.";
+  } else if (isMusicBrainzSearch) {
+    elements.catalogStatus.textContent = "Album data by MusicBrainz; cover images by Cover Art Archive.";
   } else if (spotifyCatalogMode && !showSavedOnly && isSpotifySearch) {
     elements.catalogStatus.textContent = "Browsing Spotify’s catalog. Mood and similar-artist discovery use Spinlist’s curated picks.";
   } else if (spotifyCatalogMode && !showSavedOnly) {
@@ -614,6 +810,7 @@ function openAlbum(album) {
 
 function clearFilters() {
   elements.genre.value = "all";
+  elements.genreSearch.value = "";
   elements.customGenre.value = "";
   elements.customGenre.hidden = true;
   elements.artist.value = "all";
@@ -625,7 +822,8 @@ function clearFilters() {
   updateMoodState();
   updateSavedState();
   render();
-  if (spotifyCatalogMode) scheduleSpotifySearch();
+  scheduleSpotifySearch();
+  scheduleMusicBrainzSearch();
 }
 
 function showSpotifyError(message) {
@@ -866,7 +1064,13 @@ async function loadSpotifyCatalog(requestId) {
 }
 
 function scheduleSpotifySearch() {
-  if (!spotifyCatalogMode || showSavedOnly || selectedMoods.size > 0) return;
+  if (!spotifyCatalogMode) return;
+  if (musicBrainzApiBase && getSelectedGenre()) {
+    window.clearTimeout(spotifySearchTimer);
+    spotifySearchRequest += 1;
+    return;
+  }
+  if (showSavedOnly || selectedMoods.size > 0) return;
   window.clearTimeout(spotifySearchTimer);
   spotifySearchTimer = window.setTimeout(() => {
     spotifySearchRequest += 1;
@@ -957,11 +1161,14 @@ for (const control of [elements.genre, elements.artist, elements.yearFrom, eleme
     }
     render();
     scheduleSpotifySearch();
+    scheduleMusicBrainzSearch();
   });
 }
+elements.genreSearch.addEventListener("input", renderGenreChoices);
 elements.customGenre.addEventListener("input", () => {
   render();
   scheduleSpotifySearch();
+  scheduleMusicBrainzSearch();
 });
 
 elements.moods.addEventListener("click", (event) => {
@@ -972,6 +1179,7 @@ elements.moods.addEventListener("click", (event) => {
   updateMoodState();
   render();
   scheduleSpotifySearch();
+  scheduleMusicBrainzSearch();
 });
 
 document.querySelector("#clear-filters").addEventListener("click", clearFilters);
@@ -981,6 +1189,7 @@ elements.savedToggle.addEventListener("click", () => {
   updateSavedState();
   render();
   scheduleSpotifySearch();
+  scheduleMusicBrainzSearch();
 });
 elements.surpriseButton.addEventListener("click", () => {
   const options = currentResults.filter((album) => album.id !== pickedAlbum?.id);
@@ -997,6 +1206,7 @@ restoreSpotifySession();
 updateSavedState();
 render();
 if (spotifyCatalogMode) scheduleSpotifySearch();
+loadMusicBrainzGenres();
 handleSpotifyCallback().catch((error) => {
   showSpotifyError(error.message);
   elements.spotifyDialog.showModal();

@@ -16,6 +16,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <script src="musicbrainz-config.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
@@ -58,13 +59,15 @@
                 </div>
                 <span class="genre-count" id="genre-count"></span>
               </div>
+              <label class="visually-hidden" for="genre-search">Search genres</label>
+              <input id="genre-search" class="genre-search" type="search" placeholder="Search 2,227 genres…" autocomplete="off" />
               <div class="genre-choices" id="genre-choices" role="group" aria-label="Choose one genre"></div>
               <label class="visually-hidden" for="genre-filter">Selected genre</label>
               <select id="genre-filter" class="visually-hidden" aria-label="Selected genre">
                 <option value="all">Any genre</option>
               </select>
               <input id="custom-genre" class="custom-genre-input" type="search" placeholder="Type a genre…" autocomplete="off" hidden />
-              <p class="genre-note">Every genre represented in the crate, in one place.</p>
+              <p class="genre-note" id="genre-note">Set up the MusicBrainz Worker to browse the full genre list. Curated genres are available now.</p>
             </section>
 
             <details class="refinements" id="refinements">

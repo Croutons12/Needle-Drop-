@@ -34,7 +34,12 @@
 
         <section>
           <h2>What Spotify can see</h2>
-          <p>When you connect, Spinlist uses Spotify’s Authorization Code with PKCE flow and requests no additional account permissions. It sends your search terms to Spotify’s Web API to find public catalog information. Spinlist does not request or read your Spotify profile, playlists, or listening history, and it does not send your data to its own server.</p>
+          <p>When you connect, Spinlist uses Spotify’s Authorization Code with PKCE flow and requests no additional account permissions. It sends your Spotify catalog search terms to Spotify’s Web API. Spinlist does not request or read your Spotify profile, playlists, or listening history. MusicBrainz genre searches use the separate Worker described below.</p>
+        </section>
+
+        <section>
+          <h2>Music discovery</h2>
+          <p>When the MusicBrainz Worker is configured, the genre you select is sent through that Cloudflare Worker to MusicBrainz to find albums. The Worker caches genre lists and album results to reduce repeat requests; it does not receive your saved favorites or Spotify tokens. Album-cover images are loaded from the Cover Art Archive when available. Missing artwork uses a generated cover instead.</p>
         </section>
 
         <section>
@@ -44,7 +49,7 @@
 
         <section>
           <h2>Third-party services</h2>
-          <p>Spotify receives requests made to its authorization and catalog API services when you use Spotify features. Google Fonts may receive a request to serve the site’s typefaces. Spinlist does not include analytics or advertising trackers.</p>
+          <p>Spotify receives requests made to its authorization and catalog API services when you use Spotify features. MusicBrainz receives genre searches through the Cloudflare Worker, and the Cover Art Archive may serve album images. Google Fonts may receive a request to serve the site’s typefaces. Spinlist does not include analytics or advertising trackers.</p>
         </section>
 
         <a class="privacy-back privacy-bottom-link" href="index.html">← BACK TO SPINLIST</a>

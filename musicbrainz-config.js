@@ -1,0 +1,1 @@
+window.SPINLIST_MUSICBRAINZ_API = "";
