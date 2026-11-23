@@ -5,14 +5,11 @@ genres or narrow it using the full genre list; refine picks by release year,
 mood, and similar artists. Pick one random album at a time, and save favorites
 in your browser.
 
-MusicBrainz supplies the primary genre and album catalog through a Cloudflare
-Worker. Random picks also draw from Deezer's broad genre catalogs when a
-matching category is available; narrower subgenres continue to use MusicBrainz.
-Album artwork is shown when available, with generated covers as a fallback.
-Albums found on Deezer link directly to Deezer and also offer a Spotify search.
-You can connect your own Spotify developer app to search its catalog; Spotify
-sign-in uses OAuth Authorization Code with PKCE and never asks for or stores a
-client secret.
+MusicBrainz supplies genre and album metadata through a Cloudflare Worker.
+Cover Art Archive artwork is shown when available, with generated covers as a
+fallback. Album listening links open Spotify search. You can also connect your
+own Spotify developer app to search its catalog; Spotify sign-in uses OAuth
+Authorization Code with PKCE and never asks for or stores a client secret.
 
 ## Run locally
 
@@ -61,11 +58,9 @@ each genre (including the all-genres sample) for 6 hours. A single Durable
 Object serializes upstream calls to keep requests within MusicBrainz's rate
 limit. With no year, artist, text, or mood refinements, each pick samples a new
 random release-group ID prefix from the matching MusicBrainz catalog, rather
-than choosing from the same first 100 results. The Worker can also sample
-Deezer's broad genre search results and verify each album's category tag.
-MusicBrainz remains the source for genres that do not map to a Deezer category.
-Applying refinements searches within MusicBrainz results. Mood labels and
-similar-artist relationships remain curated Spinlist data.
+than choosing from the same first 100 results. Applying refinements searches
+within the fetched results. Mood labels and similar-artist relationships remain
+curated Spinlist data.
 
 ## Publish with GitHub Pages
 

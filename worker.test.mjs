@@ -4,9 +4,7 @@ import { MusicBrainzGateway } from "./worker.mjs";
 
 test("random album queries a fresh release-group ID prefix for the selected genre", async () => {
   const originalFetch = globalThis.fetch;
-  const originalRandom = Math.random;
   const queries = [];
-  Math.random = () => 0.99;
   globalThis.fetch = async (input) => {
     const url = new URL(input);
     const query = url.searchParams.get("query");
@@ -48,66 +46,5 @@ test("random album queries a fresh release-group ID prefix for the selected genr
     assert.match(queries[1], /^tag:"jazz" AND rgid:[0-9a-f]{3}\* AND primarytype:album$/);
   } finally {
     globalThis.fetch = originalFetch;
-    Math.random = originalRandom;
-  }
-});
-
-test("random album can pick a Deezer album from its matching genre", async () => {
-  const originalFetch = globalThis.fetch;
-  const originalRandom = Math.random;
-  const urls = [];
-  Math.random = () => 0;
-  globalThis.fetch = async (input) => {
-    const url = new URL(input);
-    urls.push(url.toString());
-    if (url.pathname === "/search/album") {
-      return Response.json({
-        total: 2,
-        data: [
-          {
-            id: 1,
-            title: "Wrong genre",
-            record_type: "album",
-            genre_id: 152,
-            artist: { name: "Rock Artist" },
-          },
-          {
-            id: 2,
-            title: "Jazz Album",
-            record_type: "album",
-            genre_id: 129,
-            release_date: "2020-01-01",
-            cover_xl: "https://cdn.example/cover.jpg",
-            link: "https://www.deezer.com/album/2",
-            artist: { name: "Jazz Artist" },
-          },
-        ],
-      });
-    }
-    throw new Error(`Unexpected Deezer request: ${url}`);
-  };
-
-  const values = new Map();
-  const gateway = new MusicBrainzGateway({
-    storage: {
-      get: async (key) => values.get(key),
-      put: async (key, value) => values.set(key, value),
-    },
-  });
-
-  try {
-    const response = await gateway.fetch(new Request("https://worker.example/random-album?genre=jazz"));
-    const result = await response.json();
-
-    assert.equal(response.status, 200);
-    assert.equal(result.source, "deezer");
-    assert.equal(result.album.id, "2");
-    assert.equal(result.album.genre, "Jazz");
-    assert.equal(result.album.coverUrl, "https://cdn.example/cover.jpg");
-    assert.equal(urls.length, 1);
-    assert.match(urls[0], /\/search\/album\?q=Jazz&limit=100&index=0$/);
-  } finally {
-    globalThis.fetch = originalFetch;
-    Math.random = originalRandom;
   }
 });

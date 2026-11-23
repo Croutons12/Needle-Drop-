@@ -872,7 +872,3 @@ h2 { font: 12px/1.8 var(--pixel); letter-spacing: 0; }
   .privacy-page h1 { font-size: clamp(15px, 4.5vw, 20px); }
   .privacy-page section h2 { font-size: 8px; }
 }
-.deezer-card-link, .deezer-link { color: var(--sun); }
-.deezer-card-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 11px; font: 20px var(--mono); }
-.deezer-card-link:hover, .deezer-link:hover { color: var(--signal); }
-.deezer-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; font: 8px/1.8 var(--pixel); }

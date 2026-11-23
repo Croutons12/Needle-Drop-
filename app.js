@@ -510,23 +510,10 @@ function renderCard(album) {
   const year = document.createElement("span");
   year.textContent = album.year || "YEAR UNKNOWN";
   const mood = document.createElement("span");
-  mood.textContent = (album.moods[0] || (album.source === "deezer"
-    ? "DEEZER PICK"
-    : album.source === "musicbrainz" || album.id.startsWith("musicbrainz:")
-      ? "MUSICBRAINZ PICK"
-      : "SPOTIFY PICK")).toUpperCase();
+  mood.textContent = (album.moods[0] || (album.id.startsWith("musicbrainz:") ? "MUSICBRAINZ PICK" : "SPOTIFY PICK")).toUpperCase();
   meta.append(year, mood);
 
   info.append(genre, titleRow, meta);
-  if (album.deezerUrl) {
-    const deezerLink = document.createElement("a");
-    deezerLink.className = "deezer-card-link";
-    deezerLink.href = album.deezerUrl;
-    deezerLink.target = "_blank";
-    deezerLink.rel = "noopener noreferrer";
-    deezerLink.textContent = "Listen on Deezer ↗";
-    info.append(deezerLink);
-  }
   if (album.spotifyUrl) {
     const spotifyLink = document.createElement("a");
     spotifyLink.className = "spotify-card-link";
@@ -622,20 +609,17 @@ function mapMusicBrainzAlbums(data, genre) {
     .map((album) => {
       const year = Number.parseInt(album.firstReleaseDate, 10) || null;
       const seed = albums.find((item) => item.artist.toLowerCase() === album.artist.toLowerCase());
-      const source = album.source || "musicbrainz";
       return {
-        id: `${source}:${album.id}`,
-        source,
+        id: `musicbrainz:${album.id}`,
         title: album.title,
         artist: album.artist,
         year,
-        genre: album.genre || genre || "Various genres",
+        genre: genre || "Various genres",
         moods: seed ? seed.moods : [],
         related: seed ? seed.related : [],
-        description: `${album.title} by ${album.artist}, listed in ${source === "deezer" ? "Deezer" : "MusicBrainz"}.`,
-        imageUrl: album.coverUrl || `https://coverartarchive.org/release-group/${encodeURIComponent(album.id)}/front-250`,
-        musicBrainzUrl: source === "musicbrainz" ? `https://musicbrainz.org/release-group/${encodeURIComponent(album.id)}` : "",
-        deezerUrl: album.deezerUrl || "",
+        description: `${album.title} by ${album.artist}, listed in MusicBrainz.`,
+        imageUrl: `https://coverartarchive.org/release-group/${encodeURIComponent(album.id)}/front-250`,
+        musicBrainzUrl: `https://musicbrainz.org/release-group/${encodeURIComponent(album.id)}`,
         spotifyUrl: `https://open.spotify.com/search/${encodeURIComponent(`${album.artist} ${album.title}`)}`,
       };
     });
@@ -664,9 +648,7 @@ async function loadMusicBrainzCatalog(genre, requestId, randomMode) {
     musicBrainzCatalogLoaded = true;
     musicBrainzStatusMessage = musicBrainzAlbums.length
       ? randomMode
-        ? data.source === "deezer"
-          ? `Randomly picked from Deezer’s ${musicBrainzAlbums[0].genre} search results.`
-          : `Randomly picked from ${Number(data.count || 0).toLocaleString()} MusicBrainz albums${genre ? ` tagged ${genre}` : " across all genres"}.`
+        ? `Randomly picked from ${Number(data.count || 0).toLocaleString()} MusicBrainz albums${genre ? ` tagged ${genre}` : " across all genres"}.`
         : genre
           ? `Found ${musicBrainzAlbums.length.toLocaleString()} MusicBrainz albums for ${genre} (${Number(data.count || musicBrainzAlbums.length).toLocaleString()} matches).`
           : `Loaded ${musicBrainzAlbums.length.toLocaleString()} albums across genres from ${Number(data.count || musicBrainzAlbums.length).toLocaleString()} MusicBrainz album groups.`
@@ -748,14 +730,7 @@ function render() {
   elements.grid.replaceChildren(fragment);
   elements.grid.hidden = !pickedAlbum;
   elements.emptyState.hidden = Boolean(pickedAlbum);
-  const catalogName = pickedAlbum?.source === "deezer"
-    ? "DEEZER ALBUM"
-    : pickedAlbum?.source === "musicbrainz" || pickedAlbum?.id.startsWith("musicbrainz:")
-      ? "MUSICBRAINZ ALBUM"
-      : spotifyCatalogMode && isSpotifySearch
-        ? "SPOTIFY ALBUMS"
-        : "ALBUMS TO PICK FROM";
-  elements.count.textContent = `${String(currentResults.length).padStart(2, "0")} ${showSavedOnly ? "SAVED ALBUMS" : catalogName}`;
+  elements.count.textContent = `${String(currentResults.length).padStart(2, "0")} ${showSavedOnly ? "SAVED ALBUMS" : isMusicBrainzSearch ? "MUSICBRAINZ ALBUMS" : spotifyCatalogMode && isSpotifySearch ? "SPOTIFY ALBUMS" : "ALBUMS TO PICK FROM"}`;
   elements.pickCaption.textContent = pickedAlbum
     ? `${pickedAlbum.genre.toUpperCase()}  ·  ${pickedAlbum.year || "YEAR UNKNOWN"}  ·  PICKED AT RANDOM`
     : "No albums match these filters.";
@@ -882,15 +857,6 @@ function renderAlbumDialog(album) {
     spotifyLink.rel = "noopener noreferrer";
     spotifyLink.append(createSpotifyMark(), document.createTextNode("OPEN IN SPOTIFY ↗"));
     copy.append(spotifyLink);
-  }
-  if (album.deezerUrl) {
-    const deezerLink = document.createElement("a");
-    deezerLink.className = "deezer-link";
-    deezerLink.href = album.deezerUrl;
-    deezerLink.target = "_blank";
-    deezerLink.rel = "noopener noreferrer";
-    deezerLink.textContent = "OPEN IN DEEZER ↗";
-    copy.append(deezerLink);
   }
   layout.append(cover, copy);
   elements.dialogContent.replaceChildren(layout);

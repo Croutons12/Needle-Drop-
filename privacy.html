@@ -39,7 +39,7 @@
 
         <section>
           <h2>Music discovery</h2>
-          <p>When the MusicBrainz Worker is configured, your selected genre is sent through that Cloudflare Worker to MusicBrainz. Random picks may also search Deezer and check its album category when a matching Deezer genre is available. The Worker caches catalog data to reduce repeat requests; it does not receive your saved favorites or Spotify tokens. Album-cover images may be loaded from the Cover Art Archive or Deezer. Missing artwork uses a generated cover instead.</p>
+          <p>When the MusicBrainz Worker is configured, the genre you select is sent through that Cloudflare Worker to MusicBrainz to find albums. The Worker caches genre lists and album results to reduce repeat requests; it does not receive your saved favorites or Spotify tokens. Album-cover images are loaded from the Cover Art Archive when available. Missing artwork uses a generated cover instead.</p>
         </section>
 
         <section>
@@ -49,7 +49,7 @@
 
         <section>
           <h2>Third-party services</h2>
-          <p>Spotify receives requests made to its authorization and catalog API services when you use Spotify features. MusicBrainz and Deezer receive catalog requests through the Cloudflare Worker. The Cover Art Archive or Deezer may serve album images. Google Fonts may receive a request to serve the site’s typefaces. Spinlist does not include analytics or advertising trackers.</p>
+          <p>Spotify receives requests made to its authorization and catalog API services when you use Spotify features. MusicBrainz receives genre searches through the Cloudflare Worker, and the Cover Art Archive may serve album images. Google Fonts may receive a request to serve the site’s typefaces. Spinlist does not include analytics or advertising trackers.</p>
         </section>
 
         <a class="privacy-back privacy-bottom-link" href="index.html">← BACK TO SPINLIST</a>
